@@ -40,13 +40,19 @@ export default function LoginPage() {
     setSuccessMsg(null)
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: displayName } },
+      // Create user via admin API (email pre-confirmed, no confirmation email)
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, displayName }),
       })
-      if (error) { setError(error.message) }
-      else { setSuccessMsg('נשלח אימייל לאישור החשבון. אשרו ואז היכנסו.') }
+      const json = await res.json()
+      if (!res.ok) { setError(json.error); setLoading(false); return }
+
+      // Immediately sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) { setError(signInError.message) }
+      else { router.push(redirectTo) }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) { setError(error.message) }
