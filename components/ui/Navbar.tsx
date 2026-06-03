@@ -10,11 +10,11 @@ import { cn } from '@/lib/utils'
 import type { Profile } from '@/types'
 
 const NAV_LINKS = [
-  { href: '/',            label: 'Home' },
-  { href: '/predict',     label: 'Predict' },
-  { href: '/schedule',    label: 'Schedule' },
-  { href: '/leaderboard', label: 'Leaderboard' },
-  { href: '/format',      label: 'Format' },
+  { href: '/',            label: 'בית' },
+  { href: '/predict',     label: 'ניחושים' },
+  { href: '/schedule',    label: 'לוח משחקים' },
+  { href: '/leaderboard', label: 'טבלת ניקוד' },
+  { href: '/format',      label: 'פורמט' },
 ]
 
 export default function Navbar() {
@@ -99,12 +99,12 @@ export default function Navbar() {
                   onClick={handleSignOut}
                   className="glass glass-hover px-3 py-1.5 rounded-lg text-sm font-medium"
                 >
-                  Sign out
+                  התנתק
                 </button>
               </div>
             ) : (
               <Link href="/auth/login" className="glass-btn-primary px-4 py-2 rounded-xl text-sm font-semibold">
-                Sign in
+                התחברות
               </Link>
             )}
           </div>
@@ -144,15 +144,15 @@ export default function Navbar() {
                 <>
                   <Link href="/profile" onClick={() => setMenuOpen(false)}
                     className="block px-4 py-2.5 text-sm text-white/70 hover:text-white">
-                    👤 Profile
+                    👤 פרופיל
                   </Link>
-                  <button onClick={handleSignOut} className="w-full text-left px-4 py-2.5 text-sm text-white/70 hover:text-white">
-                    Sign out
+                  <button onClick={handleSignOut} className="w-full text-right px-4 py-2.5 text-sm text-white/70 hover:text-white">
+                    התנתק
                   </button>
                 </>
               ) : (
                 <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-indigo-300 hover:text-indigo-200">
-                  Sign in →
+                  ← התחברות
                 </Link>
               )}
             </div>

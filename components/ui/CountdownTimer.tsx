@@ -19,7 +19,6 @@ export default function CountdownTimer() {
       }
       setTimeLeft(formatCountdown(ms))
     }
-
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
@@ -29,8 +28,8 @@ export default function CountdownTimer() {
     return (
       <GlassCard className="text-center py-6 px-8 glow-indigo">
         <div className="text-4xl mb-2">🔒</div>
-        <p className="text-xl font-bold text-indigo-300">Predictions Locked</p>
-        <p className="text-sm text-white/60 mt-1">The tournament has started!</p>
+        <p className="text-xl font-bold text-indigo-300">הניחושים נעולים</p>
+        <p className="text-sm text-white/60 mt-1">הטורניר כבר התחיל — עכשיו רק מחכים לתוצאות!</p>
       </GlassCard>
     )
   }
@@ -38,16 +37,16 @@ export default function CountdownTimer() {
   if (!timeLeft) return null
 
   const units = [
-    { label: 'Days',    value: timeLeft.days },
-    { label: 'Hours',   value: timeLeft.hours },
-    { label: 'Minutes', value: timeLeft.minutes },
-    { label: 'Seconds', value: timeLeft.seconds },
+    { label: 'ימים',    value: timeLeft.days },
+    { label: 'שעות',   value: timeLeft.hours },
+    { label: 'דקות',   value: timeLeft.minutes },
+    { label: 'שניות',  value: timeLeft.seconds },
   ]
 
   return (
     <div className="text-center">
       <p className="text-sm text-white/50 uppercase tracking-widest mb-4">
-        Tournament starts in
+        הטורניר מתחיל בעוד
       </p>
       <div className="flex items-center justify-center gap-3 sm:gap-4">
         {units.map(({ label, value }, i) => (
@@ -56,7 +55,7 @@ export default function CountdownTimer() {
               <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-white">
                 {pad(value)}
               </div>
-              <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-widest mt-1">
+              <div className="text-[10px] sm:text-xs text-white/50 tracking-widest mt-1">
                 {label}
               </div>
             </GlassCard>

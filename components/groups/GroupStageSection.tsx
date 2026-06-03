@@ -14,9 +14,9 @@ export default function GroupStageSection({ groupOrder, onReorder, disabled }: G
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-shadow">Group Stage</h2>
+        <h2 className="text-xl font-bold text-shadow">חלק 2 — דירוג הבתים</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          Drag to rank all 4 teams in each group (1st → 4th).
+          גררו את 4 הקבוצות בכל בית לפי הסדר שאתם מנחשים (1 → 4).
         </p>
       </div>
 

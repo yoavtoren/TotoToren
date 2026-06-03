@@ -4,24 +4,24 @@ import './globals.css'
 import Navbar from '@/components/ui/Navbar'
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-inter',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'TotoToren — World Cup 2026 Predictions',
-  description: 'Predict the 2026 FIFA World Cup with your friends. Build your bracket, compete on the leaderboard.',
+  title: 'טוטו-תורן — ניחושי מונדיאל 2026',
+  description: 'נחשו את מונדיאל 2026 עם החברים. בנו את הטבלה שלכם, תתחרו על הפודיום.',
   openGraph: {
-    title: 'TotoToren',
-    description: 'World Cup 2026 prediction game',
-    siteName: 'TotoToren',
+    title: 'טוטו-תורן',
+    description: 'משחק ניחושי מונדיאל 2026',
+    siteName: 'טוטו-תורן',
   },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="he" dir="rtl" className={inter.variable}>
       <body>
         <Navbar />
         <main className="min-h-screen pt-16">

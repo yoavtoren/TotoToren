@@ -216,23 +216,23 @@ export default function PredictClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-shadow">My Predictions</h1>
+          <h1 className="text-3xl font-extrabold text-shadow">הניחושים שלי</h1>
           <p className="text-sm text-white/50 mt-1">
-            Complete all five parts and save before the tournament starts.
+            מלאו את כל חמשת החלקים ושמרו לפני תחילת הטורניר.
           </p>
         </div>
 
         {isLocked ? (
           <GlassCard className="flex items-center gap-2 px-4 py-2 shrink-0">
             <span className="text-lg">🔒</span>
-            <span className="text-sm font-semibold text-white/70">Predictions locked</span>
+            <span className="text-sm font-semibold text-white/70">הניחושים נעולים</span>
           </GlassCard>
         ) : (
           <div className="flex items-center gap-3 shrink-0">
             {saveError && <p className="text-sm text-red-400 max-w-[200px]">{saveError}</p>}
-            {saveSuccess && <p className="text-sm text-emerald-400">✓ Saved!</p>}
+            {saveSuccess && <p className="text-sm text-emerald-400">✓ נשמר!</p>}
             <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : '💾 Save Predictions'}
+              {saving ? 'שומר…' : '💾 שמור ניחושים'}
             </GlassButton>
           </div>
         )}

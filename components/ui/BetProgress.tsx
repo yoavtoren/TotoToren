@@ -4,11 +4,11 @@ import type { CompletionStats } from '@/types'
 import { cn } from '@/lib/utils'
 
 const PARTS = [
-  { key: 'groupMatches',   label: 'Scorelines', color: 'bg-blue-400' },
-  { key: 'groupStandings', label: 'Groups',     color: 'bg-violet-400' },
-  { key: 'thirdPlace',     label: '3rd Place',  color: 'bg-amber-400' },
-  { key: 'knockout',       label: 'Bracket',    color: 'bg-emerald-400' },
-  { key: 'futures',        label: 'Futures',    color: 'bg-rose-400' },
+  { key: 'groupMatches',   label: 'תוצאות', color: 'bg-blue-400' },
+  { key: 'groupStandings', label: 'בתים',   color: 'bg-violet-400' },
+  { key: 'thirdPlace',     label: 'שלישיים', color: 'bg-amber-400' },
+  { key: 'knockout',       label: 'נוקאאוט', color: 'bg-emerald-400' },
+  { key: 'futures',        label: 'עתידיות', color: 'bg-rose-400' },
 ] as const
 
 interface BetProgressProps {
@@ -21,9 +21,9 @@ export default function BetProgress({ stats }: BetProgressProps) {
   return (
     <div className="glass rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-white/80">Bet Progress</span>
+        <span className="text-sm font-semibold text-white/80">התקדמות הניחושים</span>
         <span className={cn('text-sm font-bold', pct === 100 ? 'text-emerald-400' : 'text-white/60')}>
-          {pct === 100 ? '✓ Complete!' : `${pct}%`}
+          {pct === 100 ? '✓ הושלם!' : `${pct}%`}
         </span>
       </div>
 
