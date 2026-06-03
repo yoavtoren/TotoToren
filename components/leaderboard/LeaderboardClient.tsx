@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
 import { GROUP_MATCHES, GROUP_MATCHES_BY_GROUP } from '@/data/match-schedule'
@@ -545,7 +545,25 @@ export default function LeaderboardClient({
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const topScore = scores[0]?.total_score ?? 0
+  // Merge all profiles with scores — everyone shows up even with 0 pts
+  const mergedEntries = useMemo(() => {
+    const scoreMap = new Map(scores.map(s => [s.user_id, s]))
+    return allProfiles
+      .map(p => scoreMap.get(p.id) ?? ({
+        user_id: p.id,
+        total_score: 0,
+        group_match_points: 0,
+        group_standing_points: 0,
+        advancement_points: 0,
+        knockout_score_points: 0,
+        futures_points: 0,
+        last_calculated_at: '',
+        profiles: { display_name: p.display_name, avatar_url: p.avatar_url },
+      } as ScoreEntry))
+      .sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0))
+  }, [scores, allProfiles])
+
+  const topScore = mergedEntries[0]?.total_score ?? 0
   const avgScore = scores.length
     ? Math.round(scores.reduce((s, e) => s + (e.total_score ?? 0), 0) / scores.length)
     : 0
@@ -592,7 +610,7 @@ export default function LeaderboardClient({
       </div>
 
       {/* Tab content */}
-      {tab === 'standings' && <StandingsSection entries={scores} />}
+      {tab === 'standings' && <StandingsSection entries={mergedEntries} />}
       {tab === 'live'      && <LiveSection />}
       {tab === 'browse'    && <BrowseSection profiles={allProfiles} />}
     </div>

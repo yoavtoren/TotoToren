@@ -27,8 +27,8 @@ export default function BetProgress({ stats }: BetProgressProps) {
         </span>
       </div>
 
-      {/* Overall bar */}
-      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+      {/* Overall bar — dir=ltr so it fills left→right regardless of page direction */}
+      <div dir="ltr" className="h-2 bg-white/10 rounded-full overflow-hidden">
         <div
           className={cn('h-full rounded-full transition-all duration-500', pct === 100 ? 'bg-emerald-400' : 'bg-indigo-400')}
           style={{ width: `${pct}%` }}
@@ -36,7 +36,7 @@ export default function BetProgress({ stats }: BetProgressProps) {
       </div>
 
       {/* Per-part breakdown */}
-      <div className="grid grid-cols-5 gap-2">
+      <div dir="ltr" className="grid grid-cols-5 gap-2">
         {PARTS.map(({ key, label, color }) => {
           const stat = stats[key]
           const partPct = stat.total > 0 ? Math.round((stat.filled / stat.total) * 100) : 0

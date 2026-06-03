@@ -111,12 +111,12 @@ function MatchRow({ m, showDate = false }: { m: (typeof GROUP_MATCHES)[0]; showD
   const homeT = teamByName(m.home)
   const awayT = teamByName(m.away)
   return (
-    <div className={cn('flex items-center gap-3 px-4 py-3', past && 'opacity-40')}>
-      {/* Time + optional date */}
-      <div className="w-20 shrink-0">
+    <div dir="ltr" className={cn('flex items-center gap-3 px-4 py-3', past && 'opacity-40')}>
+      {/* Time */}
+      <div className="w-20 shrink-0 text-left">
         {showDate && <p className="text-[10px] text-white/40 font-mono">{localDate(m.kickoff_utc)}</p>}
         <p className="text-xs font-mono font-semibold text-white/80">{localShortTime(m.kickoff_utc)}</p>
-        <p className="text-[9px] text-white/25 mt-0.5">Group {(m as any).group}</p>
+        <p className="text-[9px] text-white/25 mt-0.5">בית {(m as any).group}</p>
       </div>
 
       {/* Home */}
@@ -125,7 +125,7 @@ function MatchRow({ m, showDate = false }: { m: (typeof GROUP_MATCHES)[0]; showD
         {homeT && <span className="text-base shrink-0">{getFlagEmoji(homeT.flag_code)}</span>}
       </div>
 
-      <span className="text-white/25 text-xs font-bold shrink-0">vs</span>
+      <span className="text-white/25 text-xs font-bold shrink-0">–</span>
 
       {/* Away */}
       <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -134,7 +134,7 @@ function MatchRow({ m, showDate = false }: { m: (typeof GROUP_MATCHES)[0]; showD
       </div>
 
       {/* Countdown */}
-      <div className="w-20 text-right shrink-0">
+      <div className="w-24 text-right shrink-0">
         {past
           ? <span className="text-[10px] text-white/25">הסתיים</span>
           : <CountdownBadge targetUtc={m.kickoff_utc} />}
@@ -260,7 +260,7 @@ function KnockoutTab() {
               {matches.map(m => {
                 const past = new Date(m.kickoff_utc).getTime() < Date.now()
                 return (
-                  <GlassCard key={m.match} className={cn('flex items-center gap-4 py-3', past && 'opacity-50')}>
+                  <GlassCard dir="ltr" key={m.match} className={cn('flex items-center gap-4 py-3', past && 'opacity-50')}>
                     {/* Date */}
                     <div className="w-28 shrink-0">
                       <p className="text-[10px] text-white/40">{localDate(m.kickoff_utc)}</p>

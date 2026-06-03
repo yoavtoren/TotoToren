@@ -199,7 +199,7 @@ export default function ThirdPlacePicker({
       </GlassCard>
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div dir="ltr" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: droppable slots */}
           <GlassCard className="space-y-2">
             <h3 className="text-sm font-semibold text-white/70 mb-2">

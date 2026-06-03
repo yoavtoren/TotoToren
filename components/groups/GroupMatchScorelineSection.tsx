@@ -105,7 +105,7 @@ export default function GroupMatchScorelineSection({
                     const outcome = s?.outcome ?? ''  // independent from score
 
                     return (
-                      <div key={match.match} className="flex items-center gap-2 px-4 py-3">
+                      <div dir="ltr" key={match.match} className="flex items-center gap-2 px-4 py-3">
                         {/* Date */}
                         <span className="text-[10px] text-white/25 w-14 shrink-0 font-mono">
                           {new Date(match.kickoff_utc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}

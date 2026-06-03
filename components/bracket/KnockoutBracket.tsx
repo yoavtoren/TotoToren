@@ -264,12 +264,12 @@ export default function KnockoutBracket({
       <div>
         <h2 className="text-xl font-bold text-shadow">חלק 4 — סבבי הנוקאאוט</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          לחצו על קבוצה לניחוש המנצח — ניחוש נכון שווה <span className="text-emerald-400 font-semibold">+5 → +8 pts</span> per round.
-          Use "+score" for a bonus <span className="text-emerald-400 font-semibold">+{SCORING.KO_TOTAL_GOALS} pts</span> (total goals) or <span className="text-emerald-400 font-semibold">+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT} pts</span> (exact score).
+          לחצו על קבוצה לניחוש המנצח. לחיצה על "+score" תוסיף תוצאה לבונוס נקודות.
         </p>
       </div>
 
-      <div style={{ width: HALF_W * 2 + CENTER_W }}>
+      {/* dir=ltr: bracket always reads left→right regardless of page language */}
+      <div dir="ltr" style={{ width: HALF_W * 2 + CENTER_W }}>
 
         {/* Round label row */}
         <div className="flex items-end pb-2" style={{ height: 56 }}>
