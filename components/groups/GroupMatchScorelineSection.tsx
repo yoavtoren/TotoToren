@@ -136,7 +136,7 @@ export default function GroupMatchScorelineSection({
 
                         {/* Total goals (+2 pts) */}
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[9px] text-white/25 whitespace-nowrap">Σ</span>
+                          <span className="text-[9px] text-amber-400/50 whitespace-nowrap font-bold">Σ</span>
                           <input
                             type="number" min="0" max="30"
                             value={s?.total ?? ''}
@@ -144,7 +144,12 @@ export default function GroupMatchScorelineSection({
                             disabled={disabled}
                             placeholder="–"
                             title="Total goals (+2 pts)"
-                            className="glass-input w-10 text-center py-1.5 px-1 text-sm font-mono"
+                            className={cn(
+                              'glass-input w-10 text-center py-1.5 px-1 text-sm font-mono',
+                              s?.total
+                                ? 'bg-amber-500/25 border border-amber-400/40 text-amber-200'
+                                : 'border border-amber-400/20 text-white/50 hover:border-amber-400/35',
+                            )}
                           />
                         </div>
 
@@ -161,7 +166,12 @@ export default function GroupMatchScorelineSection({
                             disabled={disabled}
                             placeholder="–"
                             title="Exact score (+3 pts)"
-                            className="glass-input w-10 text-center py-1.5 px-1 text-sm font-mono"
+                            className={cn(
+                              'glass-input w-10 text-center py-1.5 px-1 text-sm font-mono',
+                              s?.home
+                                ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200'
+                                : 'border border-emerald-400/15 text-white/50 hover:border-emerald-400/30',
+                            )}
                           />
                           <span className="text-white/30 text-sm font-bold">:</span>
                           <input
@@ -175,7 +185,12 @@ export default function GroupMatchScorelineSection({
                             disabled={disabled}
                             placeholder="–"
                             title="Exact score (+3 pts)"
-                            className="glass-input w-10 text-center py-1.5 px-1 text-sm font-mono"
+                            className={cn(
+                              'glass-input w-10 text-center py-1.5 px-1 text-sm font-mono',
+                              s?.away
+                                ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200'
+                                : 'border border-emerald-400/15 text-white/50 hover:border-emerald-400/30',
+                            )}
                           />
                         </div>
 
