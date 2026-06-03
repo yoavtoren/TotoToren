@@ -1,5 +1,17 @@
 'use client'
 
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 import { useState } from 'react'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
 import { getThirdFromMatchNums, getThirdFromGroups } from '@/lib/bracket'
@@ -7,8 +19,8 @@ import GlassCard from '@/components/ui/GlassCard'
 import { cn } from '@/lib/utils'
 
 interface ThirdPlacePickerProps {
-  available3rdPlaceTeams: Record<string, number | null>  // groupLetter → teamId
-  assigned: Record<number, number | null>                // r32MatchNum → teamId
+  available3rdPlaceTeams: Record<string, number | null>
+  assigned: Record<number, number | null>
   assignedIds: Set<number>
   onAssign: (r32MatchNum: number, teamId: number | null) => void
   disabled?: boolean
@@ -16,123 +28,191 @@ interface ThirdPlacePickerProps {
 
 const THIRD_FROM_MATCHES = getThirdFromMatchNums()
 
+// ── Draggable team chip ───────────────────────────────────────
+function DraggableTeam({ teamId, group, isAssigned, disabled }: {
+  teamId: number; group: string; isAssigned: boolean; disabled?: boolean
+}) {
+  const team = getTeamById(teamId)
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `team-${teamId}`,
+    disabled: disabled || isAssigned,
+    data: { teamId },
+  })
+  if (!team) return null
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        'flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all select-none',
+        isDragging ? 'opacity-30' : '',
+        isAssigned ? 'glass opacity-40 cursor-not-allowed' : 'glass glass-hover cursor-grab active:cursor-grabbing',
+        disabled && 'cursor-not-allowed opacity-50'
+      )}
+    >
+      <span className="text-xs text-white/40 w-4 font-mono">{group}</span>
+      <span className="text-base">{getFlagEmoji(team.flag_code)}</span>
+      <span className="text-sm font-medium text-white flex-1">{team.name}</span>
+      {isAssigned && <span className="text-xs text-emerald-400">✓</span>}
+      {!isAssigned && !disabled && <span className="text-white/20 text-xs">⠿</span>}
+    </div>
+  )
+}
+
+// ── Droppable slot ────────────────────────────────────────────
+function DroppableSlot({ matchNum, assignedTeamId, eligibleGroups, onRemove, disabled }: {
+  matchNum: number; assignedTeamId: number | null
+  eligibleGroups: string[]; onRemove: () => void; disabled?: boolean
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `slot-${matchNum}` })
+  const team = assignedTeamId ? getTeamById(assignedTeamId) : null
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all border',
+        isOver && !team
+          ? 'border-indigo-400 bg-indigo-500/20'
+          : team
+          ? 'glass border-emerald-400/30 bg-emerald-500/10'
+          : 'glass border-white/10'
+      )}
+    >
+      <span className="text-[10px] font-mono text-white/40 w-10 shrink-0">M{matchNum}</span>
+
+      {team ? (
+        <>
+          <span className="text-base">{getFlagEmoji(team.flag_code)}</span>
+          <span className="text-sm font-medium text-white flex-1">{team.name}</span>
+          {!disabled && (
+            <button onClick={onRemove} className="text-white/30 hover:text-red-400 text-xs px-1 transition-colors">
+              ✕
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <span className={cn('text-sm flex-1 italic', isOver ? 'text-indigo-300' : 'text-white/25')}>
+            {isOver ? 'drop here' : '— empty —'}
+          </span>
+          <span className="text-[10px] text-white/20 shrink-0">
+            from: {eligibleGroups.join(', ')}
+          </span>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────
 export default function ThirdPlacePicker({
   available3rdPlaceTeams, assigned, assignedIds, onAssign, disabled,
 }: ThirdPlacePickerProps) {
-  const [selectedMatch, setSelectedMatch] = useState<number | null>(null)
+  const [activeTeamId, setActiveTeamId] = useState<number | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor,  { activationConstraint: { delay: 200, tolerance: 5 } })
+  )
 
   const availableEntries = Object.entries(available3rdPlaceTeams)
     .filter(([, id]) => id !== null)
     .map(([group, id]) => ({ group, teamId: id as number }))
 
-  const handleTeamClick = (teamId: number) => {
-    if (!selectedMatch || disabled || assignedIds.has(teamId)) return
-    onAssign(selectedMatch, teamId)
-    setSelectedMatch(null)
+  const handleDragStart = (e: DragStartEvent) => {
+    setActiveTeamId((e.active.data.current as { teamId: number })?.teamId ?? null)
   }
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveTeamId(null)
+    const { active, over } = e
+    if (!over) return
+    const teamId = (active.data.current as { teamId: number })?.teamId
+    const slotMatch = String(over.id).match(/^slot-(\d+)$/)
+    if (!teamId || !slotMatch) return
+    const matchNum = parseInt(slotMatch[1])
+    if (!assigned[matchNum]) onAssign(matchNum, teamId)
+  }
+
+  const activeTeam = activeTeamId ? getTeamById(activeTeamId) : null
 
   return (
     <section className="space-y-4">
       <div>
         <h2 className="text-xl font-bold text-shadow">Part 3 — Best 8 Third-Place Teams</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          Select an R32 slot, then click a 3rd-place team to assign them. Pick 8 of the 12.
+          Drag a team from the right into a slot on the left. Each slot shows which groups are eligible.
+          Pick 8 of the 12 predicted 3rd-place teams.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left: 8 R32 third-from slots */}
-        <GlassCard className="space-y-2">
-          <h3 className="text-sm font-semibold text-white/70 mb-2">Round of 32 — 3rd-place slots</h3>
-          {THIRD_FROM_MATCHES.map((matchNum) => {
-            const assignedId = assigned[matchNum]
-            const team = assignedId ? getTeamById(assignedId) : null
-            const isSelected = selectedMatch === matchNum
-            const eligibleGroups = getThirdFromGroups(matchNum, 'away') ?? getThirdFromGroups(matchNum, 'home') ?? []
+      {/* Rules box */}
+      <GlassCard className="text-sm text-white/60 space-y-1 py-3">
+        <p className="font-semibold text-white/80 text-xs uppercase tracking-wider mb-2">How the 8 best thirds work</p>
+        <p>• The 12 groups each produce one 3rd-place team (shown on the right).</p>
+        <p>• The 8 best of those 12 advance to the Round of 32.</p>
+        <p>• Each R32 slot can only be filled by a team from specific groups (shown in the slot).</p>
+        <p>• In this prediction game, just drag any of your 8 chosen thirds into any slot.</p>
+      </GlassCard>
 
-            return (
-              <button
-                key={matchNum}
-                onClick={() => team ? onAssign(matchNum, null) : setSelectedMatch(isSelected ? null : matchNum)}
-                disabled={disabled}
-                className={cn(
-                  'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-left',
-                  isSelected
-                    ? 'glass ring-2 ring-indigo-400 bg-indigo-500/20'
-                    : 'glass glass-hover'
-                )}
-              >
-                <span className="text-[10px] font-mono text-white/40 w-10">M{matchNum}</span>
-                <span className="text-[10px] text-white/20">[{eligibleGroups.join(',')}]</span>
-                {team ? (
-                  <>
-                    <span className="text-base">{getFlagEmoji(team.flag_code)}</span>
-                    <span className="text-sm font-medium text-white flex-1">{team.name}</span>
-                    {!disabled && <span className="text-xs text-white/30">✕</span>}
-                  </>
-                ) : (
-                  <span className={cn('text-sm flex-1', isSelected ? 'text-indigo-300' : 'text-white/30 italic')}>
-                    {isSelected ? '← pick a team →' : '— empty —'}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </GlassCard>
-
-        {/* Right: available 3rd-place teams */}
-        <GlassCard className="space-y-2">
-          <h3 className="text-sm font-semibold text-white/70 mb-1">
-            3rd-place teams ({availableEntries.length - assignedIds.size} available)
-          </h3>
-
-          {availableEntries.length === 0 && (
-            <p className="text-sm text-white/30 text-center py-6">
-              Rank your groups in Part 2 to see the 3rd-place teams.
-            </p>
-          )}
-
-          {!selectedMatch && !disabled && availableEntries.length > 0 && (
-            <p className="text-xs text-white/30 bg-white/5 rounded-lg px-3 py-2">
-              Select an empty slot on the left first.
-            </p>
-          )}
-
-          {selectedMatch && (
-            <p className="text-xs text-indigo-300 bg-indigo-500/10 rounded-lg px-3 py-2">
-              Assigning to <strong>M{selectedMatch}</strong> — click a team below
-            </p>
-          )}
-
-          <div className="space-y-1.5 mt-2">
-            {availableEntries.map(({ group, teamId }) => {
-              const team = getTeamById(teamId)
-              if (!team) return null
-              const isAssigned = assignedIds.has(teamId)
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left: droppable slots */}
+          <GlassCard className="space-y-2">
+            <h3 className="text-sm font-semibold text-white/70 mb-2">
+              R32 slots ({assignedIds.size}/8 filled)
+            </h3>
+            {THIRD_FROM_MATCHES.map((matchNum) => {
+              const eligibleGroups = getThirdFromGroups(matchNum, 'away') ?? getThirdFromGroups(matchNum, 'home') ?? []
               return (
-                <button
-                  key={teamId}
-                  onClick={() => handleTeamClick(teamId)}
-                  disabled={disabled || isAssigned || !selectedMatch}
-                  className={cn(
-                    'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-left',
-                    isAssigned
-                      ? 'glass opacity-40 cursor-not-allowed'
-                      : selectedMatch
-                      ? 'glass glass-hover cursor-pointer hover:ring-1 hover:ring-indigo-400'
-                      : 'glass opacity-60 cursor-not-allowed'
-                  )}
-                >
-                  <span className="text-xs text-white/40 w-4 font-mono">{group}</span>
-                  <span className="text-base">{getFlagEmoji(team.flag_code)}</span>
-                  <span className="text-sm font-medium text-white flex-1">{team.name}</span>
-                  {isAssigned && <span className="text-xs text-emerald-400 font-semibold">✓</span>}
-                </button>
+                <DroppableSlot
+                  key={matchNum}
+                  matchNum={matchNum}
+                  assignedTeamId={assigned[matchNum] ?? null}
+                  eligibleGroups={eligibleGroups}
+                  onRemove={() => onAssign(matchNum, null)}
+                  disabled={disabled}
+                />
               )
             })}
-          </div>
-        </GlassCard>
-      </div>
+          </GlassCard>
+
+          {/* Right: draggable teams */}
+          <GlassCard className="space-y-2">
+            <h3 className="text-sm font-semibold text-white/70 mb-1">
+              3rd-place teams — drag into a slot
+            </h3>
+            {availableEntries.length === 0 ? (
+              <p className="text-sm text-white/30 italic text-center py-6">
+                Rank your groups in Part 2 first.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {availableEntries.map(({ group, teamId }) => (
+                  <DraggableTeam
+                    key={teamId}
+                    teamId={teamId}
+                    group={group}
+                    isAssigned={assignedIds.has(teamId)}
+                    disabled={disabled}
+                  />
+                ))}
+              </div>
+            )}
+          </GlassCard>
+        </div>
+
+        {/* Drag overlay — shows the team chip while dragging */}
+        <DragOverlay>
+          {activeTeam && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl glass-dark shadow-2xl opacity-95 pointer-events-none">
+              <span className="text-base">{getFlagEmoji(activeTeam.flag_code)}</span>
+              <span className="text-sm font-medium text-white">{activeTeam.name}</span>
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
     </section>
   )
 }
