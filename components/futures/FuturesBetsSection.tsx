@@ -63,6 +63,13 @@ function TeamPicker({ label, hint, points, value, onChange, disabled }: TeamPick
           <span className="text-base">{getFlagEmoji(selected.flag_code)}</span>
           <span className="text-sm font-medium text-white">{selected.name}</span>
           <span className="text-[10px] text-white/30 ml-auto">Group {selected.group_letter}</span>
+          {!disabled && (
+            <button
+              onClick={() => onChange(null)}
+              className="text-white/25 hover:text-red-400 text-xs transition-colors ml-1"
+              title="Clear"
+            >✕</button>
+          )}
         </div>
       )}
     </div>
@@ -133,16 +140,24 @@ export default function FuturesBetsSection({ futures, onSet, disabled }: Futures
             </div>
             <span className="text-xs text-indigo-300 font-bold">+12 pts</span>
           </div>
-          <input
-            type="number"
-            min="0"
-            max="500"
-            value={futures.total_goals_prediction}
-            onChange={(e) => onSet('total_goals_prediction', e.target.value)}
-            disabled={disabled}
-            placeholder="e.g. 156"
-            className="glass-input"
-          />
+          <div className="relative">
+            <input
+              type="number"
+              min="0"
+              max="500"
+              value={futures.total_goals_prediction}
+              onChange={(e) => onSet('total_goals_prediction', e.target.value)}
+              disabled={disabled}
+              placeholder="e.g. 156"
+              className="glass-input pr-8"
+            />
+            {futures.total_goals_prediction && !disabled && (
+              <button
+                onClick={() => onSet('total_goals_prediction', '')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-red-400 text-xs transition-colors"
+              >✕</button>
+            )}
+          </div>
         </div>
       </GlassCard>
     </section>

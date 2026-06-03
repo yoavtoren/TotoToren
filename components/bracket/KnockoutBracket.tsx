@@ -35,9 +35,15 @@ function MatchCard({
   const TeamRow = ({ teamId, side }: { teamId: number | null; side: 'home' | 'away' }) => {
     const team = teamId ? getTeamById(teamId) : null
     const isWinner = winnerId !== null && winnerId === teamId && teamId !== null
+    // clicking selected winner deselects it
+    const handleClick = () => {
+      if (!teamId || !canPick) return
+      if (isWinner) onPickWinner(-1) // -1 signals deselect
+      else onPickWinner(teamId)
+    }
     return (
       <button
-        onClick={() => teamId && canPick && onPickWinner(teamId)}
+        onClick={handleClick}
         disabled={!canPick || !teamId}
         className={cn(
           'flex items-center gap-1.5 w-full px-2 py-1.5 rounded-lg text-left transition-all text-xs',
@@ -52,7 +58,7 @@ function MatchCard({
           <>
             <span className="text-sm leading-none">{getFlagEmoji(team.flag_code)}</span>
             <span className="flex-1 truncate leading-none">{team.name}</span>
-            {isWinner && <span className="text-emerald-400 text-[10px]">★</span>}
+            {isWinner && <span className="text-emerald-400 text-[10px]" title="Click to deselect">★ ✕</span>}
           </>
         ) : (
           <span className="italic text-white/20">TBD</span>

@@ -88,8 +88,10 @@ export function usePredictions(initial?: PredictionsInitial) {
   // ── Bracket winners (cascades downstream) ────────────────────
   const setBracketWinner = useCallback(
     (matchNum: number, teamId: number | null) => {
+      // -1 is the deselect signal from clicking a selected winner
+      const resolvedId = teamId === -1 ? null : teamId
       setBracketWinnersState((prev) => {
-        const next = { ...prev, [matchNum]: teamId }
+        const next = { ...prev, [matchNum]: resolvedId }
         // Clear all matches that depended on this one (feeder cascade)
         clearDownstream(next, matchNum)
         next[matchNum] = teamId
