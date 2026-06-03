@@ -140,30 +140,29 @@ export default function ThirdPlacePicker({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-shadow">Part 3 — Best 8 Third-Place Teams</h2>
+        <h2 className="text-xl font-bold text-shadow">חלק 3 — 8 הקבוצות הטובות במקום השלישי</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          Drag a team from the right into a slot on the left. Each slot shows which groups are eligible.
-          Pick 8 of the 12 predicted 3rd-place teams.
+          גררו קבוצה מהצד הימני לאחד החריצים. בחרו 8 מתוך 12 קבוצות שניחשתם שיעברו.
         </p>
       </div>
 
       {/* Rules box */}
       <GlassCard className="space-y-4 py-3">
-        <p className="font-semibold text-white/80 text-xs uppercase tracking-wider">How the 8 best 3rd-place teams work</p>
+        <p className="font-semibold text-white/80 text-xs uppercase tracking-wider">איך עובדות 8 הקבוצות הטובות במקום שלישי?</p>
 
-        {/* Step 1 — who qualifies */}
+        {/* שלב 1 */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Step 1 — Which 8 of the 12 qualify?</p>
+          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">שלב 1 — אילו 8 מתוך 12 עוברות?</p>
           <p className="text-sm text-white/60">
-            Each group produces one 3rd-place team → 12 total. They are ranked against each other by:
+            כל בית מייצר קבוצה אחת שסיימה במקום שלישי — 12 בסך הכל. הן מדורגות ביניהן לפי:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-white/60">
             {[
-              ['1', 'Points earned in group stage'],
-              ['2', 'Goal difference'],
-              ['3', 'Goals scored'],
-              ['4', 'Fair-play (conduct) score'],
-              ['5', 'FIFA world ranking'],
+              ['1', 'נקודות בשלב הבתים'],
+              ['2', 'הפרש שערים'],
+              ['3', 'שערים שבוקעו'],
+              ['4', 'ציון הגינות (כרטיסים)'],
+              ['5', 'דירוג FIFA'],
             ].map(([n, rule]) => (
               <div key={n} className="flex items-center gap-2 glass rounded-lg px-3 py-1.5">
                 <span className="text-indigo-400 font-bold w-3">{n}.</span>
@@ -172,30 +171,29 @@ export default function ThirdPlacePicker({
             ))}
           </div>
           <p className="text-xs text-white/40">
-            The <strong className="text-white/70">top 8</strong> of these 12 teams advance. The bottom 4 are eliminated.
+            8 הקבוצות <strong className="text-white/70">הטובות ביותר</strong> עוברות. 4 נשארות בבית.
           </p>
         </div>
 
-        {/* Step 2 — which slot */}
+        {/* שלב 2 */}
         <div className="space-y-2 border-t border-white/10 pt-3">
-          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Step 2 — Which slot do they play in?</p>
+          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">שלב 2 — לאיזה חריץ בסבב 32 הן נכנסות?</p>
           <p className="text-sm text-white/60">
-            The bracket slot a 3rd-place team fills has <strong className="text-white">nothing to do with how many points they got</strong>.
-            It depends entirely on <strong className="text-white">which group they came from</strong>.
+            המיקום בסבב 32 <strong className="text-white">לא קשור לנקודות</strong> — הוא נקבע אך ורק לפי
+            <strong className="text-white"> מאיזה בית הקבוצה הגיעה</strong>.
           </p>
           <p className="text-sm text-white/60">
-            FIFA pre-defines which groups&apos; 3rd-place teams go into which R32 slot.
-            Each slot on the left shows <span className="text-white font-medium">"from: A, C, F..."</span> —
-            that means only a 3rd-place team from one of those listed groups can play in that slot.
+            FIFA קובעת מראש איזה בית ממלא איזה חריץ. כל חריץ מציג <span className="text-white font-medium">״מ: A, C, F...״</span> —
+            כלומר רק קבוצה שלישית מהבתים הרשומים יכולה להיכנס לאותו חריץ.
           </p>
           <div className="glass rounded-xl px-4 py-3 text-sm text-white/70 space-y-1">
-            <p className="font-semibold text-white">Example:</p>
-            <p>Slot M75 says <span className="text-indigo-300 font-mono">from: A, B, C, D, F</span></p>
-            <p>→ Drag the 3rd-place team from Group A, B, C, D, or F into that slot.</p>
-            <p>→ You cannot put the 3rd-place team from Group G there.</p>
+            <p className="font-semibold text-white">לדוגמה:</p>
+            <p>חריץ M75 כתוב <span className="text-indigo-300 font-mono">מ: A, B, C, D, F</span></p>
+            <p>← גררו לשם את הקבוצה השלישית מבית A, B, C, D או F.</p>
+            <p>← קבוצה שלישית מבית G לא יכולה להיכנס לחריץ הזה.</p>
           </div>
           <p className="text-xs text-white/40">
-            In this prediction game: pick whichever team from the eligible groups you think will qualify, and drag them in.
+            במשחק זה: בחרו את הקבוצה שלדעתכם תעבור מהבתים המתאימים, וגררו אותה לחריץ.
           </p>
         </div>
       </GlassCard>
@@ -205,7 +203,7 @@ export default function ThirdPlacePicker({
           {/* Left: droppable slots */}
           <GlassCard className="space-y-2">
             <h3 className="text-sm font-semibold text-white/70 mb-2">
-              R32 slots ({assignedIds.size}/8 filled)
+              חריצי שלב 32 ({assignedIds.size}/8 מלאים)
             </h3>
             {THIRD_FROM_MATCHES.map((matchNum) => {
               const eligibleGroups = getThirdFromGroups(matchNum, 'away') ?? getThirdFromGroups(matchNum, 'home') ?? []
@@ -225,7 +223,7 @@ export default function ThirdPlacePicker({
           {/* Right: draggable teams */}
           <GlassCard className="space-y-2">
             <h3 className="text-sm font-semibold text-white/70 mb-1">
-              3rd-place teams — drag into a slot
+              קבוצות שלישיות — גררו לחריץ
             </h3>
             {availableEntries.length === 0 ? (
               <p className="text-sm text-white/30 italic text-center py-6">

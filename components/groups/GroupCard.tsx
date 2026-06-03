@@ -38,10 +38,10 @@ export default function GroupCard({ groupLetter, teamIds, onReorder, disabled }:
     <GlassCard className="space-y-2">
       <div className="flex items-center justify-between mb-1">
         <h3 className="font-bold text-sm text-white/80 uppercase tracking-wider">
-          Group {groupLetter}
+          בית {groupLetter}
         </h3>
         {!disabled && (
-          <span className="text-[10px] text-white/30">drag to rank</span>
+          <span className="text-[10px] text-white/30">גרור לסידור</span>
         )}
       </div>
 

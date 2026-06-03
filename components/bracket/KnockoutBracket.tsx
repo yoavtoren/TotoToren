@@ -262,9 +262,9 @@ export default function KnockoutBracket({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-xl font-bold text-shadow">Part 4 — Knockout Bracket</h2>
+        <h2 className="text-xl font-bold text-shadow">חלק 4 — סבבי הנוקאאוט</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          Click a team to pick the winner — correct picks earn <span className="text-emerald-400 font-semibold">+5 → +8 pts</span> per round.
+          לחצו על קבוצה לניחוש המנצח — ניחוש נכון שווה <span className="text-emerald-400 font-semibold">+5 → +8 pts</span> per round.
           Use "+score" for a bonus <span className="text-emerald-400 font-semibold">+{SCORING.KO_TOTAL_GOALS} pts</span> (total goals) or <span className="text-emerald-400 font-semibold">+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT} pts</span> (exact score).
         </p>
       </div>
