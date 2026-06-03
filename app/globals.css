@@ -3,17 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --pitch-dark:  #031a06;
-    --pitch-mid:   #062010;
-    --pitch-light: #09301a;
-    --accent:      #22c55e;
-    --accent-dim:  rgba(34,197,94,0.15);
-  }
-
   * { box-sizing: border-box; }
 
-  /* Hide number input spinners */
+  /* Hide number spinners */
   input[type='number']::-webkit-inner-spin-button,
   input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type='number'] { -moz-appearance: textfield; }
@@ -22,131 +14,183 @@
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    color: #fff;
+    color: #f0f5f1;
     font-family: var(--font-inter), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 
-    /* ── Football pitch background ─────────────────────────────
-       Layer 1 (top): stadium floodlight radial bloom from above
-       Layer 2: alternating grass stripes (horizontal mowing pattern)
-       Layer 3: deep green base gradient
-    ───────────────────────────────────────────────────────── */
+    /* ── World Cup pitch — richer, deeper ───────────────────── */
     background:
-      /* Floodlight bloom */
-      radial-gradient(ellipse 90% 55% at 50% -5%,
-        rgba(100,220,120,0.12) 0%,
-        transparent 65%),
-      /* Secondary side lights */
-      radial-gradient(ellipse 50% 40% at 0% 40%,
-        rgba(34,197,94,0.06) 0%,
-        transparent 60%),
-      radial-gradient(ellipse 50% 40% at 100% 40%,
-        rgba(34,197,94,0.06) 0%,
-        transparent 60%),
-      /* Alternating grass stripes */
+      /* Top stadium floodlights bloom */
+      radial-gradient(ellipse 100% 50% at 50% -8%,
+        rgba(80, 200, 110, 0.16) 0%, transparent 60%),
+      /* Side ambient lights */
+      radial-gradient(ellipse 45% 60% at 0% 50%,
+        rgba(30, 160, 70, 0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 45% 60% at 100% 50%,
+        rgba(30, 160, 70, 0.07) 0%, transparent 55%),
+      /* Grass mowing stripes */
       repeating-linear-gradient(
         180deg,
-        rgba(255,255,255,0.025) 0px,
-        rgba(255,255,255,0.025) 55px,
-        transparent               55px,
-        transparent               110px
+        rgba(255,255,255,0.03)  0px,
+        rgba(255,255,255,0.03)  52px,
+        rgba(0,0,0,0.04)        52px,
+        rgba(0,0,0,0.04)        104px
       ),
-      /* Deep green base */
-      linear-gradient(165deg,
-        #051a08 0%,
-        #072512 25%,
-        #052010 55%,
-        #031508 100%
+      /* Rich dark-green base */
+      linear-gradient(170deg,
+        #041208 0%,
+        #06200e 20%,
+        #041a0b 55%,
+        #021008 100%
       );
     background-attachment: fixed;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
-  ::-webkit-scrollbar-thumb { background: rgba(34,197,94,0.25); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(34,197,94,0.45); }
+  /* Crisp scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: rgba(0,0,0,0.35); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(52,211,100,0.4), rgba(22,163,74,0.3));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(52,211,100,0.6); }
 }
 
 @layer components {
-  /* Glassmorphism — green-tinted for the pitch theme */
+  /* ── Main glass card — professional, readable ────────────── */
   .glass {
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    background: rgba(10, 35, 15, 0.55);
-    border: 1px solid rgba(34, 197, 94, 0.18);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px) saturate(1.5) brightness(1.08);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5) brightness(1.08);
+    background: linear-gradient(
+      145deg,
+      rgba(18, 58, 28, 0.82) 0%,
+      rgba(10, 38, 18, 0.88) 100%
+    );
+    border: 1px solid rgba(52, 211, 100, 0.22);
+    box-shadow:
+      0 10px 40px rgba(0, 0, 0, 0.55),
+      0  3px 12px rgba(0, 0, 0, 0.35),
+      inset 0  1px 0  rgba(255, 255, 255, 0.09),
+      inset 0 -1px 0  rgba(0,   0,   0,   0.25),
+      inset 1px 0  0  rgba(255, 255, 255, 0.04);
   }
 
+  /* Darker nav / overlay variant */
   .glass-dark {
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    background: rgba(3, 20, 6, 0.75);
-    border: 1px solid rgba(34, 197, 94, 0.12);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    backdrop-filter: blur(24px) saturate(1.6) brightness(0.85);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6) brightness(0.85);
+    background: linear-gradient(
+      180deg,
+      rgba(4, 18, 8, 0.92) 0%,
+      rgba(2, 12, 5, 0.96) 100%
+    );
+    border: 1px solid rgba(52, 211, 100, 0.14);
+    box-shadow: 0 4px 30px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(52,211,100,0.08);
   }
 
   .glass-hover {
-    transition: background 0.2s, border-color 0.2s;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
   }
   .glass-hover:hover {
-    background: rgba(20, 60, 28, 0.65);
-    border-color: rgba(34, 197, 94, 0.3);
+    background: linear-gradient(
+      145deg,
+      rgba(24, 75, 36, 0.90) 0%,
+      rgba(14, 50, 24, 0.92) 100%
+    );
+    border-color: rgba(52, 211, 100, 0.38);
+    box-shadow:
+      0 12px 44px rgba(0,0,0,0.55),
+      0  3px 14px rgba(0,0,0,0.35),
+      0  0   18px rgba(52,211,100,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.11);
   }
 
+  /* Button base */
   .glass-btn {
-    @apply glass glass-hover rounded-xl px-5 py-2.5 font-semibold text-sm
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    background: linear-gradient(145deg, rgba(18,58,28,0.8), rgba(10,38,18,0.88));
+    border: 1px solid rgba(52,211,100,0.22);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+    @apply rounded-xl px-5 py-2.5 font-semibold text-sm
            transition-all duration-200 active:scale-95 cursor-pointer;
   }
+  .glass-btn:hover {
+    border-color: rgba(52,211,100,0.38);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 14px rgba(52,211,100,0.12);
+  }
 
-  /* Primary button — bright green accent */
+  /* Primary CTA — glowing green */
   .glass-btn-primary {
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    background: rgba(34, 197, 94, 0.22);
-    border: 1px solid rgba(34, 197, 94, 0.55);
-    box-shadow: 0 0 18px rgba(34, 197, 94, 0.2);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    background: linear-gradient(
+      135deg,
+      rgba(34, 197, 94,  0.35) 0%,
+      rgba(22, 163, 74,  0.28) 100%
+    );
+    border: 1px solid rgba(52, 211, 100, 0.6);
+    box-shadow:
+      0  6px 24px rgba(0,0,0,0.45),
+      0  0   20px rgba(34,197,94,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      inset 0 -1px 0 rgba(0,0,0,0.2);
     @apply rounded-xl px-5 py-2.5 font-semibold text-sm text-emerald-100
            transition-all duration-200 active:scale-95 cursor-pointer;
   }
   .glass-btn-primary:hover {
-    background: rgba(34, 197, 94, 0.35);
-    box-shadow: 0 0 28px rgba(34, 197, 94, 0.35);
+    background: linear-gradient(
+      135deg,
+      rgba(34, 197, 94, 0.50) 0%,
+      rgba(22, 163, 74, 0.42) 100%
+    );
+    box-shadow:
+      0  8px 28px rgba(0,0,0,0.5),
+      0  0   30px rgba(34,197,94,0.40),
+      inset 0 1px 0 rgba(255,255,255,0.18);
   }
 
+  /* Input fields */
   .glass-input {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    background: rgba(5, 25, 10, 0.6);
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    background: linear-gradient(135deg, rgba(4,18,8,0.75), rgba(2,12,5,0.82));
+    border: 1px solid rgba(52,211,100,0.22);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(0,0,0,0.2);
     @apply w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/30
            outline-none transition;
   }
   .glass-input:focus {
-    border-color: rgba(34, 197, 94, 0.5);
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+    border-color: rgba(52,211,100,0.55);
+    box-shadow:
+      inset 0 2px 6px rgba(0,0,0,0.4),
+      0 0 0 3px rgba(34,197,94,0.14),
+      0 0 14px rgba(34,197,94,0.12);
   }
 }
 
 @layer utilities {
   .text-shadow {
-    text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 40px rgba(34,197,94,0.12);
+    text-shadow:
+      0 2px 16px rgba(0,0,0,0.8),
+      0 0  40px rgba(34,197,94,0.15);
   }
 
-  .glow-green {
-    box-shadow: 0 0 24px rgba(34, 197, 94, 0.45);
-  }
-  .glow-indigo {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-  }
-  .glow-emerald {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-  }
-  .glow-gold {
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+  .glow-green   { box-shadow: 0 0 28px rgba(34,197,94,0.55),  0 0 8px rgba(34,197,94,0.3); }
+  .glow-indigo  { box-shadow: 0 0 24px rgba(99,102,241,0.45), 0 0 8px rgba(99,102,241,0.2); }
+  .glow-emerald { box-shadow: 0 0 24px rgba(16,185,129,0.45), 0 0 8px rgba(16,185,129,0.2); }
+  .glow-gold    { box-shadow: 0 0 24px rgba(251,191,36,0.55),  0 0 8px rgba(251,191,36,0.3); }
+
+  /* Card with accent top border — use on highlighted cards */
+  .card-accent {
+    border-top: 2px solid rgba(52,211,100,0.5) !important;
+    box-shadow:
+      0 10px 40px rgba(0,0,0,0.55),
+      0  0   20px rgba(34,197,94,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.09);
   }
 
-  /* Hide scrollbar but keep scroll */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }

@@ -52,7 +52,7 @@ export default function CountdownTimer() {
       <div className="flex items-center justify-center gap-3 sm:gap-4">
         {units.map(({ label, value }, i) => (
           <div key={label} className="flex items-center gap-3 sm:gap-4">
-            <GlassCard className="min-w-[72px] sm:min-w-[88px] py-4 text-center">
+            <GlassCard className="min-w-[72px] sm:min-w-[88px] py-4 text-center card-accent">
               <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-white">
                 {pad(value)}
               </div>

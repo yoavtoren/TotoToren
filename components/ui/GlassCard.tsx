@@ -9,7 +9,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
 export default function GlassCard({ children, className, hover = false, ...props }: GlassCardProps) {
   return (
     <div
-      className={cn('glass rounded-2xl p-4', hover && 'glass-hover cursor-pointer', className)}
+      className={cn('glass rounded-2xl p-5', hover && 'glass-hover cursor-pointer', className)}
       {...props}
     >
       {children}
