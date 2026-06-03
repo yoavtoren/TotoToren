@@ -148,23 +148,15 @@ export default function ThirdPlacePicker({
       </div>
 
       {/* Rules box */}
-      <GlassCard className="space-y-3 py-3">
+      <GlassCard className="space-y-4 py-3">
         <p className="font-semibold text-white/80 text-xs uppercase tracking-wider">How the 8 best 3rd-place teams work</p>
 
-        <div className="text-sm text-white/60 space-y-1.5">
-          <p>
-            Each of the 12 groups (A–L) finishes with a team ranked <strong className="text-white">3rd out of 4</strong>.
-            That gives us 12 third-place teams total.
+        {/* Step 1 — who qualifies */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Step 1 — Which 8 of the 12 qualify?</p>
+          <p className="text-sm text-white/60">
+            Each group produces one 3rd-place team → 12 total. They are ranked against each other by:
           </p>
-          <p>
-            These 12 teams are ranked against each other and only the{' '}
-            <strong className="text-white">top 8</strong> advance to the Round of 32 —
-            the bottom 4 go home.
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Ranking criteria (in order)</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-white/60">
             {[
               ['1', 'Points earned in group stage'],
@@ -179,11 +171,33 @@ export default function ThirdPlacePicker({
               </div>
             ))}
           </div>
+          <p className="text-xs text-white/40">
+            The <strong className="text-white/70">top 8</strong> of these 12 teams advance. The bottom 4 are eliminated.
+          </p>
         </div>
 
-        <p className="text-xs text-white/40 border-t border-white/10 pt-2">
-          In this game: predict which 8 of the 12 thirds you think will qualify, then drag each into one of the 8 R32 slots below.
-        </p>
+        {/* Step 2 — which slot */}
+        <div className="space-y-2 border-t border-white/10 pt-3">
+          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Step 2 — Which slot do they play in?</p>
+          <p className="text-sm text-white/60">
+            The bracket slot a 3rd-place team fills has <strong className="text-white">nothing to do with how many points they got</strong>.
+            It depends entirely on <strong className="text-white">which group they came from</strong>.
+          </p>
+          <p className="text-sm text-white/60">
+            FIFA pre-defines which groups&apos; 3rd-place teams go into which R32 slot.
+            Each slot on the left shows <span className="text-white font-medium">"from: A, C, F..."</span> —
+            that means only a 3rd-place team from one of those listed groups can play in that slot.
+          </p>
+          <div className="glass rounded-xl px-4 py-3 text-sm text-white/70 space-y-1">
+            <p className="font-semibold text-white">Example:</p>
+            <p>Slot M75 says <span className="text-indigo-300 font-mono">from: A, B, C, D, F</span></p>
+            <p>→ Drag the 3rd-place team from Group A, B, C, D, or F into that slot.</p>
+            <p>→ You cannot put the 3rd-place team from Group G there.</p>
+          </div>
+          <p className="text-xs text-white/40">
+            In this prediction game: pick whichever team from the eligible groups you think will qualify, and drag them in.
+          </p>
+        </div>
       </GlassCard>
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
