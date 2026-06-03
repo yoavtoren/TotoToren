@@ -65,10 +65,10 @@ export function usePredictions(initial?: PredictionsInitial) {
 
   // ── Group match scores ────────────────────────────────────────
   const setGroupMatchScore = useCallback(
-    (matchId: number, side: 'home' | 'away', value: string) => {
+    (matchId: number, side: 'home' | 'away' | 'total', value: string) => {
       setGroupMatchScoresState((prev) => ({
         ...prev,
-        [matchId]: { ...(prev[matchId] ?? { home: '', away: '' }), [side]: value },
+        [matchId]: { ...(prev[matchId] ?? { home: '', away: '', total: '' }), [side]: value },
       }))
     },
     []

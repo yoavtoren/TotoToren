@@ -48,8 +48,9 @@ function buildInitial(
   const groupMatchScores: GroupMatchScores = {}
   for (const m of matchPreds) {
     groupMatchScores[m.match_id] = {
-      home: String(m.predicted_home),
-      away: String(m.predicted_away),
+      home: m.predicted_home != null ? String(m.predicted_home) : '',
+      away: m.predicted_away != null ? String(m.predicted_away) : '',
+      total: (m as any).predicted_total_goals != null ? String((m as any).predicted_total_goals) : '',
     }
   }
 
@@ -121,12 +122,14 @@ export default function PredictClient({
         }))
       )
 
-      // Part 1 — group match scores
+      // Part 1 — group match scores (save any row where at least one field is filled)
       const matchRows = Object.entries(groupMatchScores)
-        .filter(([, s]) => s.home !== '' && s.away !== '')
+        .filter(([, s]) => s.home !== '' || s.away !== '' || s.total !== '')
         .map(([matchId, s]) => ({
           user_id: userId, match_id: parseInt(matchId),
-          predicted_home: parseInt(s.home), predicted_away: parseInt(s.away),
+          predicted_home:        s.home  !== '' ? parseInt(s.home)  : null,
+          predicted_away:        s.away  !== '' ? parseInt(s.away)  : null,
+          predicted_total_goals: s.total !== '' ? parseInt(s.total) : null,
           updated_at: new Date().toISOString(),
         }))
 

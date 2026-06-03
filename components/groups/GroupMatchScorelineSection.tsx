@@ -10,7 +10,7 @@ import type { GroupMatchScores } from '@/types'
 
 interface GroupMatchScorelineSectionProps {
   scores: GroupMatchScores
-  onScoreChange: (matchId: number, side: 'home' | 'away', value: string) => void
+  onScoreChange: (matchId: number, side: 'home' | 'away' | 'total', value: string) => void
   disabled?: boolean
 }
 
@@ -79,11 +79,12 @@ export default function GroupMatchScorelineSection({
     <section className="space-y-4">
       <div>
         <h2 className="text-xl font-bold text-shadow">Part 1 — Group Match Predictions</h2>
-        <p className="text-sm text-white/50 mt-0.5">
-          Click <strong className="text-blue-300">1</strong> (home win),{' '}
-          <strong className="text-amber-300">X</strong> (draw), or{' '}
-          <strong className="text-rose-300">2</strong> (away win) — then enter the exact score for bonus points.
-        </p>
+        <div className="flex flex-wrap gap-2 mt-1 text-xs">
+          <span className="glass px-2 py-1 rounded-lg"><strong className="text-blue-300">1/X/2</strong> <span className="text-white/40">= +1 pt</span></span>
+          <span className="glass px-2 py-1 rounded-lg"><strong className="text-amber-300">Σ total goals</strong> <span className="text-white/40">= +2 pts</span></span>
+          <span className="glass px-2 py-1 rounded-lg"><strong className="text-emerald-300">exact score</strong> <span className="text-white/40">= +3 pts</span></span>
+          <span className="text-white/30 py-1">All independent — pick any combination.</span>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -155,7 +156,21 @@ export default function GroupMatchScorelineSection({
                           </button>
                         ))}
 
-                        {/* Score inputs + clear */}
+                        {/* Total goals (+2 pts) */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-[9px] text-white/25 whitespace-nowrap">Σ</span>
+                          <input
+                            type="number" min="0" max="30"
+                            value={s?.total ?? ''}
+                            onChange={e => onScoreChange(match.match, 'total', e.target.value)}
+                            disabled={disabled}
+                            placeholder="–"
+                            title="Total goals (+2 pts)"
+                            className="glass-input w-10 text-center py-1.5 px-1 text-sm font-mono"
+                          />
+                        </div>
+
+                        {/* Exact score (+3 pts) */}
                         <div className="flex items-center gap-1 shrink-0">
                           <input
                             ref={el => { if (el) inputRefs.current.set(`${match.match}-home`, el) }}
@@ -167,7 +182,8 @@ export default function GroupMatchScorelineSection({
                             }}
                             disabled={disabled}
                             placeholder="–"
-                            className="glass-input w-12 text-center py-1.5 px-1 text-sm font-mono"
+                            title="Exact score (+3 pts)"
+                            className="glass-input w-10 text-center py-1.5 px-1 text-sm font-mono"
                           />
                           <span className="text-white/30 text-sm font-bold">:</span>
                           <input
@@ -180,14 +196,15 @@ export default function GroupMatchScorelineSection({
                             }}
                             disabled={disabled}
                             placeholder="–"
-                            className="glass-input w-12 text-center py-1.5 px-1 text-sm font-mono"
+                            title="Exact score (+3 pts)"
+                            className="glass-input w-10 text-center py-1.5 px-1 text-sm font-mono"
                           />
                         </div>
 
-                        {/* Clear score */}
-                        {(s?.home || s?.away) && !disabled && (
+                        {/* Clear all */}
+                        {(s?.home || s?.away || s?.total) && !disabled && (
                           <button
-                            onClick={() => { onScoreChange(match.match, 'home', ''); onScoreChange(match.match, 'away', '') }}
+                            onClick={() => { onScoreChange(match.match, 'home', ''); onScoreChange(match.match, 'away', ''); onScoreChange(match.match, 'total', '') }}
                             className="text-white/20 hover:text-red-400 text-xs transition-colors shrink-0"
                             title="Clear score"
                           >✕</button>

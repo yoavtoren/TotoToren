@@ -1,12 +1,211 @@
 'use client'
 
 import { useState } from 'react'
-import { BRACKET_BY_ROUND } from '@/data/bracket-slots'
 import { resolveMatchTeam } from '@/lib/bracket'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
 import { cn } from '@/lib/utils'
 import type { GroupOrder, BracketWinners, ThirdPlaceState, KnockoutScores } from '@/types'
 
+// ─── Layout constants ──────────────────────────────────────────────────────────
+const CH     = 56             // card height (px)
+const CW     = 116            // card width (px)
+const CGAP   = 16             // horizontal gap between columns (connector space)
+const SGAP   = 24             // vertical gap between sibling cards in same round
+
+const SLOT     = CH + SGAP        // = 62   one vertical slot
+const HALF_W   = 4 * (CW + CGAP) // = 528  width of each bracket half
+const CENTER_W = 160              // width of center section
+const TOTAL_H  = 8 * SLOT         // = 496  total bracket height
+
+// ─── Position helpers ──────────────────────────────────────────────────────────
+type Round = 'r32' | 'r16' | 'qf' | 'sf'
+
+function cardTopY(round: Round, i: number): number {
+  switch (round) {
+    case 'r32': return i * SLOT
+    case 'r16': return (4 * i + 1) * SLOT / 2
+    case 'qf':  return (8 * i + 3) * SLOT / 2
+    case 'sf':  return 7 * SLOT / 2
+  }
+}
+
+// Left half: col 0=R32, 1=R16, 2=QF, 3=SF
+function lColX(pos: number) { return pos * (CW + CGAP) }
+
+// Right half: col 0=SF (with CGAP stub on left), 1=QF, 2=R16, 3=R32
+function rColX(pos: number) { return (pos + 1) * CGAP + pos * CW }
+
+// ─── Match ordering (top-to-bottom within each half) ──────────────────────────
+// Left: R32→R16→QF→SF (flows toward center)
+// Pairing: R32[2i], R32[2i+1] → R16[i]; R16[2i], R16[2i+1] → QF[i]; QF[0,1] → SF
+const L_R32 = [74, 77, 73, 75, 76, 78, 79, 80]
+const L_R16 = [89, 90, 91, 92]
+const L_QF  = [97, 98]
+const L_SF  = 101
+
+// Right: SF→QF→R16→R32 (fans out from center)
+const R_SF  = 102
+const R_QF  = [99, 100]
+const R_R16 = [93, 94, 95, 96]
+const R_R32 = [83, 84, 81, 82, 86, 88, 85, 87]
+
+// ─── Compact match card ────────────────────────────────────────────────────────
+interface MatchCardProps {
+  matchNum: number
+  homeId: number | null; awayId: number | null; winnerId: number | null
+  homeScore: string; awayScore: string
+  onPickWinner: (id: number) => void
+  onScoreChange: (side: 'home' | 'away', val: string) => void
+  disabled?: boolean
+  highlight?: boolean
+}
+
+function MatchCard({
+  matchNum, homeId, awayId, winnerId, homeScore, awayScore,
+  onPickWinner, onScoreChange, disabled, highlight,
+}: MatchCardProps) {
+  const [scoreOpen, setScoreOpen] = useState(false)
+  const canPick = !disabled && homeId !== null && awayId !== null
+
+  const TeamRow = ({ teamId }: { teamId: number | null }) => {
+    const team = teamId ? getTeamById(teamId) : null
+    const isWinner = winnerId !== null && winnerId === teamId && teamId !== null
+    return (
+      <button
+        onClick={() => teamId && canPick && onPickWinner(teamId)}
+        disabled={!canPick || !teamId}
+        className={cn(
+          'flex items-center gap-1 w-full px-1.5 py-[5px] rounded text-left transition-all text-[11px]',
+          isWinner
+            ? 'bg-emerald-500/25 text-emerald-100 font-semibold'
+            : team && canPick
+              ? 'hover:bg-white/10 text-white/80 cursor-pointer'
+              : 'text-white/25 cursor-default',
+        )}
+      >
+        {team ? (
+          <>
+            <span className="text-xs leading-none">{getFlagEmoji(team.flag_code)}</span>
+            <span className="flex-1 truncate leading-none">{team.name}</span>
+            {isWinner && <span className="text-emerald-400 text-[9px]">★</span>}
+          </>
+        ) : (
+          <span className="italic text-white/15 text-[10px]">TBD</span>
+        )}
+      </button>
+    )
+  }
+
+  return (
+    <div className={cn(
+      'rounded-lg overflow-hidden glass',
+      highlight && 'ring-1 ring-yellow-400/50',
+    )}>
+      <div className="flex items-center justify-between px-1.5 py-0.5 bg-white/5 border-b border-white/10">
+        <span className="text-[9px] font-mono text-white/20">M{matchNum}</span>
+        {canPick && (
+          <button
+            onClick={() => setScoreOpen(o => !o)}
+            className="text-[9px] text-white/25 hover:text-white/50 transition-colors"
+          >
+            {scoreOpen ? 'hide' : '+score'}
+          </button>
+        )}
+      </div>
+      <div className="px-0.5 py-0.5">
+        <TeamRow teamId={homeId} />
+        <div className="h-px bg-white/5 mx-1.5" />
+        <TeamRow teamId={awayId} />
+      </div>
+      {scoreOpen && (
+        <div className="px-1.5 pb-1.5 flex items-center gap-1 pt-1">
+          <input type="number" min="0" max="20" value={homeScore}
+            onChange={e => onScoreChange('home', e.target.value)} placeholder="0"
+            className="glass-input text-center py-0.5 text-[11px] w-full" />
+          <span className="text-white/30 text-[10px]">:</span>
+          <input type="number" min="0" max="20" value={awayScore}
+            onChange={e => onScoreChange('away', e.target.value)} placeholder="0"
+            className="glass-input text-center py-0.5 text-[11px] w-full" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── SVG connector lines ───────────────────────────────────────────────────────
+type Line = { x1: number; y1: number; x2: number; y2: number }
+
+function ConnectorSvg({ lines, width }: { lines: Line[]; width: number }) {
+  return (
+    <svg
+      className="absolute top-0 left-0 pointer-events-none"
+      width={width} height={TOTAL_H}
+      style={{ overflow: 'visible' }}
+    >
+      <g stroke="rgba(255,255,255,0.15)" strokeWidth="1" fill="none">
+        {lines.map((l, i) => (
+          <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
+        ))}
+      </g>
+    </svg>
+  )
+}
+
+function buildLeftLines(): Line[] {
+  const lines: Line[] = []
+
+  function fanIn(srcRound: Round, dstRound: Round, srcRightX: number, dstLeftX: number, count: number) {
+    const midX = (srcRightX + dstLeftX) / 2
+    for (let i = 0; i < count; i++) {
+      const y0 = cardTopY(srcRound, 2 * i) + CH / 2
+      const y1 = cardTopY(srcRound, 2 * i + 1) + CH / 2
+      const yt = cardTopY(dstRound, i) + CH / 2
+      lines.push({ x1: srcRightX, y1: y0, x2: midX,     y2: y0 })
+      lines.push({ x1: srcRightX, y1: y1, x2: midX,     y2: y1 })
+      lines.push({ x1: midX,      y1: y0, x2: midX,     y2: y1 })
+      lines.push({ x1: midX,      y1: yt, x2: dstLeftX, y2: yt })
+    }
+  }
+
+  fanIn('r32', 'r16', lColX(0) + CW, lColX(1), 4)
+  fanIn('r16', 'qf',  lColX(1) + CW, lColX(2), 2)
+  fanIn('qf',  'sf',  lColX(2) + CW, lColX(3), 1)
+
+  // SF → center stub
+  const sfY = cardTopY('sf', 0) + CH / 2
+  lines.push({ x1: lColX(3) + CW, y1: sfY, x2: HALF_W, y2: sfY })
+
+  return lines
+}
+
+function buildRightLines(): Line[] {
+  const lines: Line[] = []
+
+  // center → SF stub
+  const sfY = cardTopY('sf', 0) + CH / 2
+  lines.push({ x1: 0, y1: sfY, x2: rColX(0), y2: sfY })
+
+  function fanOut(srcRound: Round, dstRound: Round, srcRightX: number, dstLeftX: number, count: number) {
+    const midX = (srcRightX + dstLeftX) / 2
+    for (let i = 0; i < count; i++) {
+      const ys = cardTopY(srcRound, i) + CH / 2
+      const y0 = cardTopY(dstRound, 2 * i) + CH / 2
+      const y1 = cardTopY(dstRound, 2 * i + 1) + CH / 2
+      lines.push({ x1: srcRightX, y1: ys, x2: midX,     y2: ys })
+      lines.push({ x1: midX,      y1: y0, x2: midX,     y2: y1 })
+      lines.push({ x1: midX,      y1: y0, x2: dstLeftX, y2: y0 })
+      lines.push({ x1: midX,      y1: y1, x2: dstLeftX, y2: y1 })
+    }
+  }
+
+  fanOut('sf', 'qf',  rColX(0) + CW, rColX(1), 1)
+  fanOut('qf', 'r16', rColX(1) + CW, rColX(2), 2)
+  fanOut('r16','r32', rColX(2) + CW, rColX(3), 4)
+
+  return lines
+}
+
+// ─── Main bracket ──────────────────────────────────────────────────────────────
 interface KnockoutBracketProps {
   groupOrder: GroupOrder
   thirdPlace: ThirdPlaceState
@@ -17,170 +216,40 @@ interface KnockoutBracketProps {
   disabled?: boolean
 }
 
-// ── Compact match card ────────────────────────────────────────
-function MatchCard({
-  matchNum, homeId, awayId, winnerId, homeScore, awayScore,
-  onPickWinner, onScoreChange, disabled, showScoreToggle = true,
-}: {
-  matchNum: number
-  homeId: number | null; awayId: number | null; winnerId: number | null
-  homeScore: string; awayScore: string
-  onPickWinner: (id: number) => void
-  onScoreChange: (side: 'home' | 'away', val: string) => void
-  disabled?: boolean; showScoreToggle?: boolean
-}) {
-  const [scoreOpen, setScoreOpen] = useState(false)
-  const canPick = !disabled && homeId !== null && awayId !== null
-
-  const TeamRow = ({ teamId, side }: { teamId: number | null; side: 'home' | 'away' }) => {
-    const team = teamId ? getTeamById(teamId) : null
-    const isWinner = winnerId !== null && winnerId === teamId && teamId !== null
-    // clicking selected winner deselects it
-    const handleClick = () => {
-      if (!teamId || !canPick) return
-      if (isWinner) onPickWinner(-1) // -1 signals deselect
-      else onPickWinner(teamId)
-    }
-    return (
-      <button
-        onClick={handleClick}
-        disabled={!canPick || !teamId}
-        className={cn(
-          'flex items-center gap-1.5 w-full px-2 py-1.5 rounded-lg text-left transition-all text-xs',
-          isWinner
-            ? 'bg-emerald-500/25 text-emerald-100 font-semibold'
-            : team && canPick
-            ? 'hover:bg-white/10 text-white/80 cursor-pointer'
-            : 'text-white/30 cursor-default'
-        )}
-      >
-        {team ? (
-          <>
-            <span className="text-sm leading-none">{getFlagEmoji(team.flag_code)}</span>
-            <span className="flex-1 truncate leading-none">{team.name}</span>
-            {isWinner && <span className="text-emerald-400 text-[10px]" title="Click to deselect">★ ✕</span>}
-          </>
-        ) : (
-          <span className="italic text-white/20">TBD</span>
-        )}
-      </button>
-    )
-  }
-
-  return (
-    <div className="glass rounded-xl overflow-hidden">
-      {/* Match label */}
-      <div className="flex items-center justify-between px-2 py-0.5 bg-white/5 border-b border-white/10">
-        <span className="text-[9px] font-mono text-white/25">M{matchNum}</span>
-        {showScoreToggle && canPick && (
-          <button
-            onClick={() => setScoreOpen(o => !o)}
-            className="text-[9px] text-white/30 hover:text-white/60 transition-colors"
-          >
-            {scoreOpen ? 'hide' : '+score'}
-          </button>
-        )}
-      </div>
-
-      {/* Teams */}
-      <div className="px-1 py-1 space-y-0.5">
-        <TeamRow teamId={homeId} side="home" />
-        <div className="h-px bg-white/5 mx-2" />
-        <TeamRow teamId={awayId} side="away" />
-      </div>
-
-      {/* Score input (expandable) */}
-      {scoreOpen && (
-        <div className="px-2 pb-2 flex items-center gap-1">
-          <input
-            type="number" min="0" max="20"
-            value={homeScore}
-            onChange={e => onScoreChange('home', e.target.value)}
-            placeholder="0"
-            className="glass-input text-center py-0.5 text-xs w-full"
-          />
-          <span className="text-white/30 text-xs">:</span>
-          <input
-            type="number" min="0" max="20"
-            value={awayScore}
-            onChange={e => onScoreChange('away', e.target.value)}
-            placeholder="0"
-            className="glass-input text-center py-0.5 text-xs w-full"
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Bracket column ────────────────────────────────────────────
-const CARD_H = 74   // px — approximate height of one MatchCard
-const GAP    = 6    // px — gap between cards in same round
-
-function BracketColumn({
-  label, matches, groupOrder, thirdPlace, bracketWinners, knockoutScores,
-  onPickWinner, onScoreChange, disabled, marginTop = 0,
-}: {
-  label: string
-  matches: { match: number }[]
-  groupOrder: GroupOrder; thirdPlace: ThirdPlaceState
-  bracketWinners: BracketWinners; knockoutScores: KnockoutScores
-  onPickWinner: (m: number, id: number) => void
-  onScoreChange: (m: number, s: 'home' | 'away', v: string) => void
-  disabled?: boolean; marginTop?: number
-}) {
-  const resolve = (matchNum: number, side: 'home' | 'away') =>
-    resolveMatchTeam(matchNum, side, groupOrder, thirdPlace, bracketWinners)
-
-  const spacing = (CARD_H + GAP) * 2 // space between cards doubles each round
-
-  return (
-    <div className="flex flex-col shrink-0" style={{ marginTop }}>
-      <p className="text-[9px] font-semibold text-white/35 uppercase tracking-widest text-center mb-2">
-        {label}
-      </p>
-      <div className="flex flex-col" style={{ gap: spacing - CARD_H }}>
-        {matches.map((def, i) => {
-          const s = knockoutScores[def.match]
-          return (
-            <div key={def.match} style={{ marginTop: i === 0 ? 0 : undefined }}>
-              <MatchCard
-                matchNum={def.match}
-                homeId={resolve(def.match, 'home')}
-                awayId={resolve(def.match, 'away')}
-                winnerId={bracketWinners[def.match] ?? null}
-                homeScore={s?.home ?? ''}
-                awayScore={s?.away ?? ''}
-                onPickWinner={(id) => onPickWinner(def.match, id)}
-                onScoreChange={(side, val) => onScoreChange(def.match, side, val)}
-                disabled={disabled}
-              />
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── Main bracket ──────────────────────────────────────────────
 export default function KnockoutBracket({
   groupOrder, thirdPlace, bracketWinners, knockoutScores,
   onPickWinner, onScoreChange, disabled,
 }: KnockoutBracketProps) {
-  const resolve = (matchNum: number, side: 'home' | 'away') =>
-    resolveMatchTeam(matchNum, side, groupOrder, thirdPlace, bracketWinners)
+  const resolve = (m: number, s: 'home' | 'away') =>
+    resolveMatchTeam(m, s, groupOrder, thirdPlace, bracketWinners)
 
-  // Staggering: each successive round starts half a "slot" lower
-  const slot = CARD_H + GAP
-  const roundMargins = [0, slot / 2, slot * 1.5, slot * 3.5]
-  const roundLabels  = ['Round of 32', 'Round of 16', 'Quarter-finals', 'Semi-finals']
-  const rounds       = ['r32', 'r16', 'qf', 'sf'] as const
+  function card(matchNum: number, highlight?: boolean) {
+    const sc = knockoutScores[matchNum]
+    return (
+      <MatchCard
+        matchNum={matchNum}
+        homeId={resolve(matchNum, 'home')}
+        awayId={resolve(matchNum, 'away')}
+        winnerId={bracketWinners[matchNum] ?? null}
+        homeScore={sc?.home ?? ''}
+        awayScore={sc?.away ?? ''}
+        onPickWinner={(id) => onPickWinner(matchNum, id)}
+        onScoreChange={(side, val) => onScoreChange(matchNum, side, val)}
+        disabled={disabled}
+        highlight={highlight}
+      />
+    )
+  }
 
-  const colGap = (CARD_H + GAP) // gap between R32 cards determines spacing between rounds
+  const champion    = bracketWinners[104] != null ? getTeamById(bracketWinners[104]!) : null
+  const sfTopY      = cardTopY('sf', 0)
+  const sfCenterY   = sfTopY + CH / 2
+
+  const LEFT_LINES  = buildLeftLines()
+  const RIGHT_LINES = buildRightLines()
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       <div>
         <h2 className="text-xl font-bold text-shadow">Part 4 — Knockout Bracket</h2>
         <p className="text-sm text-white/50 mt-0.5">
@@ -188,69 +257,124 @@ export default function KnockoutBracket({
         </p>
       </div>
 
-      <div className="overflow-x-auto no-scrollbar pb-4">
-        <div className="flex items-start gap-3 min-w-max">
-          {rounds.map((round, ri) => (
-            <div key={round} className="w-44 shrink-0">
-              <BracketColumn
-                label={roundLabels[ri]}
-                matches={BRACKET_BY_ROUND[round] ?? []}
-                groupOrder={groupOrder}
-                thirdPlace={thirdPlace}
-                bracketWinners={bracketWinners}
-                knockoutScores={knockoutScores}
-                onPickWinner={onPickWinner}
-                onScoreChange={onScoreChange}
-                disabled={disabled}
-                marginTop={roundMargins[ri]}
-              />
+      <div style={{ width: HALF_W * 2 + CENTER_W }}>
+
+        {/* Round label row */}
+        <div className="flex items-end pb-2" style={{ height: 28 }}>
+          {(['Round of 32', 'Round of 16', 'Quarters', 'Semis'] as const).map((label, i) => (
+            <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }}>
+              <p className="text-[8px] font-semibold text-white/30 uppercase tracking-widest text-center truncate">{label}</p>
             </div>
           ))}
+          <div style={{ width: CENTER_W, marginLeft: CGAP, marginRight: CGAP }}>
+            <p className="text-[9px] font-bold text-yellow-400/60 uppercase tracking-widest text-center">🏆 Final</p>
+          </div>
+          {(['Semis', 'Quarters', 'Round of 16', 'Round of 32'] as const).map((label, i) => (
+            <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }}>
+              <p className="text-[8px] font-semibold text-white/30 uppercase tracking-widest text-center truncate">{label}</p>
+            </div>
+          ))}
+        </div>
 
-          {/* Final column */}
-          <div className="w-44 shrink-0" style={{ marginTop: roundMargins[3] + (CARD_H + GAP) * 4 }}>
-            <p className="text-[9px] font-semibold text-white/35 uppercase tracking-widest text-center mb-2">Final</p>
-            <div className="space-y-3">
-              {/* 3rd place */}
-              <div>
-                <p className="text-[9px] text-white/25 text-center mb-1">3rd-place play-off</p>
-                <MatchCard
-                  matchNum={103}
-                  homeId={resolve(103, 'home')} awayId={resolve(103, 'away')}
-                  winnerId={bracketWinners[103] ?? null}
-                  homeScore={knockoutScores[103]?.home ?? ''} awayScore={knockoutScores[103]?.away ?? ''}
-                  onPickWinner={(id) => onPickWinner(103, id)}
-                  onScoreChange={(s, v) => onScoreChange(103, s, v)}
-                  disabled={disabled}
-                />
+        {/* Bracket row */}
+        <div className="flex items-start">
+
+          {/* ── Left half ──────────────────────────────────────── */}
+          <div className="relative shrink-0" style={{ width: HALF_W, height: TOTAL_H }}>
+            <ConnectorSvg lines={LEFT_LINES} width={HALF_W} />
+
+            {L_R32.map((m, i) => (
+              <div key={m} className="absolute" style={{ left: lColX(0), top: cardTopY('r32', i), width: CW }}>
+                {card(m)}
               </div>
-
-              {/* Final */}
-              <div className="ring-1 ring-yellow-400/40 rounded-xl overflow-hidden">
-                <p className="text-[10px] text-yellow-300 font-bold text-center py-1 bg-yellow-400/10">🏆 THE FINAL</p>
-                <MatchCard
-                  matchNum={104}
-                  homeId={resolve(104, 'home')} awayId={resolve(104, 'away')}
-                  winnerId={bracketWinners[104] ?? null}
-                  homeScore={knockoutScores[104]?.home ?? ''} awayScore={knockoutScores[104]?.away ?? ''}
-                  onPickWinner={(id) => onPickWinner(104, id)}
-                  onScoreChange={(s, v) => onScoreChange(104, s, v)}
-                  disabled={disabled}
-                />
+            ))}
+            {L_R16.map((m, i) => (
+              <div key={m} className="absolute" style={{ left: lColX(1), top: cardTopY('r16', i), width: CW }}>
+                {card(m)}
               </div>
-
-              {bracketWinners[104] != null && (() => {
-                const champ = getTeamById(bracketWinners[104]!)
-                return champ ? (
-                  <div className="glass rounded-xl p-2 text-center glow-emerald">
-                    <p className="text-lg">{getFlagEmoji(champ.flag_code)}</p>
-                    <p className="text-[10px] text-emerald-300 font-bold">{champ.name}</p>
-                    <p className="text-[9px] text-white/30">Your Champion 🏆</p>
-                  </div>
-                ) : null
-              })()}
+            ))}
+            {L_QF.map((m, i) => (
+              <div key={m} className="absolute" style={{ left: lColX(2), top: cardTopY('qf', i), width: CW }}>
+                {card(m)}
+              </div>
+            ))}
+            <div className="absolute" style={{ left: lColX(3), top: sfTopY, width: CW }}>
+              {card(L_SF)}
             </div>
           </div>
+
+          {/* ── Center ─────────────────────────────────────────── */}
+          <div className="relative shrink-0" style={{ width: CENTER_W, height: TOTAL_H }}>
+            <svg
+              className="absolute inset-0 pointer-events-none"
+              width={CENTER_W} height={TOTAL_H}
+              style={{ overflow: 'visible' }}
+            >
+              <g stroke="rgba(255,255,255,0.15)" strokeWidth="1" fill="none">
+                <line x1={0}         y1={sfCenterY} x2={16}            y2={sfCenterY} />
+                <line x1={CENTER_W}  y1={sfCenterY} x2={CENTER_W - 16} y2={sfCenterY} />
+              </g>
+            </svg>
+
+            {/* Final */}
+            <div className="absolute" style={{ top: sfTopY, left: 8, right: 8 }}>
+              <div className="rounded-2xl overflow-hidden ring-2 ring-yellow-400/60 shadow-lg shadow-yellow-500/20">
+                <div className="bg-yellow-400/15 border-b border-yellow-400/30 py-1.5 text-center">
+                  <p className="text-2xl leading-none">🏆</p>
+                  <p className="text-[10px] text-yellow-300 font-bold tracking-widest uppercase mt-0.5">The Final</p>
+                </div>
+                {card(104, true)}
+              </div>
+            </div>
+
+            {/* Champion */}
+            {champion && (
+              <div
+                className="absolute glass rounded-xl p-2 text-center glow-emerald"
+                style={{ top: sfTopY + CH + 48, left: 8, right: 8 }}
+              >
+                <p className="text-lg">{getFlagEmoji(champion.flag_code)}</p>
+                <p className="text-[10px] text-emerald-300 font-bold">{champion.name}</p>
+                <p className="text-[9px] text-white/30">Champion 🏆</p>
+              </div>
+            )}
+
+            {/* 3rd-place */}
+            <div className="absolute" style={{ top: sfTopY + CH * 2 + 80, left: 8, right: 8 }}>
+              <div className="rounded-xl overflow-hidden ring-1 ring-amber-700/40">
+                <div className="bg-amber-900/20 border-b border-amber-700/30 py-1 text-center flex items-center justify-center gap-1">
+                  <span className="text-base leading-none">🥉</span>
+                  <p className="text-[9px] text-amber-400/80 font-semibold tracking-wide uppercase">3rd Place</p>
+                </div>
+                {card(103)}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Right half ─────────────────────────────────────── */}
+          <div className="relative shrink-0" style={{ width: HALF_W, height: TOTAL_H }}>
+            <ConnectorSvg lines={RIGHT_LINES} width={HALF_W} />
+
+            <div className="absolute" style={{ left: rColX(0), top: sfTopY, width: CW }}>
+              {card(R_SF)}
+            </div>
+            {R_QF.map((m, i) => (
+              <div key={m} className="absolute" style={{ left: rColX(1), top: cardTopY('qf', i), width: CW }}>
+                {card(m)}
+              </div>
+            ))}
+            {R_R16.map((m, i) => (
+              <div key={m} className="absolute" style={{ left: rColX(2), top: cardTopY('r16', i), width: CW }}>
+                {card(m)}
+              </div>
+            ))}
+            {R_R32.map((m, i) => (
+              <div key={m} className="absolute" style={{ left: rColX(3), top: cardTopY('r32', i), width: CW }}>
+                {card(m)}
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
     </section>
