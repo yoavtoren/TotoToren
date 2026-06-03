@@ -6,9 +6,7 @@ import { formatCountdown, pad } from '@/lib/utils'
 import GlassCard from './GlassCard'
 
 export default function CountdownTimer() {
-  const [timeLeft, setTimeLeft] = useState(() =>
-    formatCountdown(new Date(TOURNAMENT_START).getTime() - Date.now())
-  )
+  const [timeLeft, setTimeLeft] = useState<ReturnType<typeof formatCountdown> | null>(null)
   const [locked, setLocked] = useState(false)
 
   useEffect(() => {
@@ -36,6 +34,8 @@ export default function CountdownTimer() {
       </GlassCard>
     )
   }
+
+  if (!timeLeft) return null
 
   const units = [
     { label: 'Days',    value: timeLeft.days },
