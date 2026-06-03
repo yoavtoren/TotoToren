@@ -26,6 +26,8 @@ export interface Profile {
   display_name: string
   avatar_url: string | null
   is_admin: boolean
+  favorite_team_id: number | null
+  notifications_whistle: boolean
   created_at: string
 }
 

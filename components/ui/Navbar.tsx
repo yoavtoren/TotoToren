@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import { cn } from '@/lib/utils'
+import type { Profile } from '@/types'
 
 const NAV_LINKS = [
   { href: '/',            label: 'Home' },
@@ -18,13 +20,21 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Pick<Profile, 'display_name' | 'avatar_url'> | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      if (data.user) {
+        supabase.from('profiles').select('display_name, avatar_url').eq('id', data.user.id).single()
+          .then(({ data: p }) => { if (p) setProfile(p) })
+      }
+    })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
+      if (!session?.user) setProfile(null)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -65,10 +75,26 @@ export default function Navbar() {
           {/* Auth */}
           <div className="hidden sm:flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-white/70 truncate max-w-[140px]">
-                  {user.user_metadata?.full_name ?? user.email}
-                </span>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 glass glass-hover px-2.5 py-1.5 rounded-xl transition-colors"
+                >
+                  {profile?.avatar_url ? (
+                    <Image
+                      src={profile.avatar_url} alt="avatar"
+                      width={24} height={24}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-indigo-600/60 flex items-center justify-center text-[10px] font-bold text-white">
+                      {(profile?.display_name ?? user.email ?? '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-sm text-white/70 truncate max-w-[120px]">
+                    {profile?.display_name ?? user.user_metadata?.full_name ?? user.email}
+                  </span>
+                </Link>
                 <button
                   onClick={handleSignOut}
                   className="glass glass-hover px-3 py-1.5 rounded-lg text-sm font-medium"
@@ -115,9 +141,15 @@ export default function Navbar() {
             ))}
             <div className="pt-2 border-t border-white/10">
               {user ? (
-                <button onClick={handleSignOut} className="w-full text-left px-4 py-2.5 text-sm text-white/70 hover:text-white">
-                  Sign out ({user.email})
-                </button>
+                <>
+                  <Link href="/profile" onClick={() => setMenuOpen(false)}
+                    className="block px-4 py-2.5 text-sm text-white/70 hover:text-white">
+                    👤 Profile
+                  </Link>
+                  <button onClick={handleSignOut} className="w-full text-left px-4 py-2.5 text-sm text-white/70 hover:text-white">
+                    Sign out
+                  </button>
+                </>
               ) : (
                 <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-indigo-300 hover:text-indigo-200">
                   Sign in →

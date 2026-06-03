@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePredictions } from '@/hooks/usePredictions'
+import { useWhistle } from '@/lib/useWhistle'
 import GroupMatchScorelineSection from '@/components/groups/GroupMatchScorelineSection'
 import GroupStageSection from '@/components/groups/GroupStageSection'
 import ThirdPlacePicker from '@/components/third-place/ThirdPlacePicker'
@@ -106,6 +107,15 @@ export default function PredictClient({
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [whistleEnabled, setWhistleEnabled] = useState(true)
+  const playWhistle = useWhistle(whistleEnabled)
+
+  // Load whistle preference from profile
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.from('profiles').select('notifications_whistle').eq('id', userId).single()
+      .then(({ data }) => { if (data) setWhistleEnabled(data.notifications_whistle) })
+  }, [userId])
 
   const handleSave = async () => {
     if (isLocked) return
@@ -192,6 +202,7 @@ export default function PredictClient({
       if (err) throw new Error(err.message)
 
       setSaveSuccess(true)
+      playWhistle()
       setTimeout(() => setSaveSuccess(false), 3000)
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Save failed')

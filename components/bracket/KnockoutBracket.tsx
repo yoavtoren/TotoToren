@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { resolveMatchTeam } from '@/lib/bracket'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
 import { cn } from '@/lib/utils'
+import { SCORING } from '@/lib/scoring.config'
 import type { GroupOrder, BracketWinners, ThirdPlaceState, KnockoutScores } from '@/types'
 
 // ─── Layout constants ──────────────────────────────────────────────────────────
@@ -116,9 +117,9 @@ function MatchCard({
         {canPick && (
           <button
             onClick={() => setScoreOpen(o => !o)}
-            className="text-[9px] text-white/25 hover:text-white/50 transition-colors"
+            className="text-[9px] text-white/35 hover:text-emerald-300/70 transition-colors"
           >
-            {scoreOpen ? 'hide' : '+score'}
+            {scoreOpen ? 'hide' : `+score (+${SCORING.KO_TOTAL_GOALS}/+${SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}pts)`}
           </button>
         )}
       </div>
@@ -263,25 +264,44 @@ export default function KnockoutBracket({
       <div>
         <h2 className="text-xl font-bold text-shadow">Part 4 — Knockout Bracket</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          Click a team to pick the winner. Winners cascade automatically. Use "+score" to predict the scoreline.
+          Click a team to pick the winner — correct picks earn <span className="text-emerald-400 font-semibold">+5 → +8 pts</span> per round.
+          Use "+score" for a bonus <span className="text-emerald-400 font-semibold">+{SCORING.KO_TOTAL_GOALS} pts</span> (total goals) or <span className="text-emerald-400 font-semibold">+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT} pts</span> (exact score).
         </p>
       </div>
 
       <div style={{ width: HALF_W * 2 + CENTER_W }}>
 
         {/* Round label row */}
-        <div className="flex items-end pb-2" style={{ height: 28 }}>
-          {(['Round of 32', 'Round of 16', 'Quarters', 'Semis'] as const).map((label, i) => (
-            <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }}>
-              <p className="text-[8px] font-semibold text-white/30 uppercase tracking-widest text-center truncate">{label}</p>
+        <div className="flex items-end pb-2" style={{ height: 56 }}>
+          {([
+            { label: 'Round of 32', pts: SCORING.ADV_R16   },
+            { label: 'Round of 16', pts: SCORING.ADV_QF    },
+            { label: 'Quarters',    pts: SCORING.ADV_SF    },
+            { label: 'Semis',       pts: SCORING.ADV_FINAL },
+          ] as const).map(({ label, pts }, i) => (
+            <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }} className="text-center">
+              <p className="text-[7px] font-semibold text-white/30 uppercase tracking-widest truncate">{label}</p>
+              <p className="text-[11px] font-bold text-emerald-400 leading-tight mt-0.5">+{pts} pts</p>
+              <p className="text-[7px] text-white/20 mt-0.5">score +{SCORING.KO_TOTAL_GOALS}/+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}</p>
             </div>
           ))}
-          <div style={{ width: CENTER_W, marginLeft: CGAP, marginRight: CGAP }}>
-            <p className="text-[9px] font-bold text-yellow-400/60 uppercase tracking-widest text-center">🏆 Final</p>
+
+          <div style={{ width: CENTER_W, marginLeft: CGAP, marginRight: CGAP }} className="text-center">
+            <p className="text-[9px] font-bold text-yellow-400/70 uppercase tracking-widest">🏆 Final</p>
+            <p className="text-[11px] font-bold text-yellow-400 leading-tight mt-0.5">+{SCORING.ADV_FINAL} pts</p>
+            <p className="text-[7px] text-yellow-300/40 mt-0.5">score +{SCORING.KO_TOTAL_GOALS}/+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}</p>
           </div>
-          {(['Semis', 'Quarters', 'Round of 16', 'Round of 32'] as const).map((label, i) => (
-            <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }}>
-              <p className="text-[8px] font-semibold text-white/30 uppercase tracking-widest text-center truncate">{label}</p>
+
+          {([
+            { label: 'Semis',       pts: SCORING.ADV_FINAL },
+            { label: 'Quarters',    pts: SCORING.ADV_SF    },
+            { label: 'Round of 16', pts: SCORING.ADV_QF    },
+            { label: 'Round of 32', pts: SCORING.ADV_R16   },
+          ] as const).map(({ label, pts }, i) => (
+            <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }} className="text-center">
+              <p className="text-[7px] font-semibold text-white/30 uppercase tracking-widest truncate">{label}</p>
+              <p className="text-[11px] font-bold text-emerald-400 leading-tight mt-0.5">+{pts} pts</p>
+              <p className="text-[7px] text-white/20 mt-0.5">score +{SCORING.KO_TOTAL_GOALS}/+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}</p>
             </div>
           ))}
         </div>
