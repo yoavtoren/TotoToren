@@ -9,7 +9,7 @@ import GlassButton from '@/components/ui/GlassButton'
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/predict'
+  const redirectTo = searchParams.get('redirectTo') || '/profile'
 
   const supabase = createClient()
 
