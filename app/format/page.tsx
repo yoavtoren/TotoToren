@@ -2,72 +2,72 @@ import GlassCard from '@/components/ui/GlassCard'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'TotoToren — Tournament Format',
+  title: 'טוטו-תורן — פורמט הטורניר',
 }
 
 const TIEBREAKERS = [
-  'Points in matches between the tied teams (head-to-head)',
-  'Goal difference in head-to-head matches',
-  'Goals scored in head-to-head matches',
-  '(Re-apply 1–3 if a subset is still tied)',
-  'Overall goal difference',
-  'Overall goals scored',
-  'Fair-play (conduct) score',
-  'FIFA world ranking',
+  'נקודות במשחקים בין הקבוצות הקשורות (גול-גול)',
+  'הפרש שערים במשחקים בין הקבוצות הקשורות',
+  'שערים שבוקעו במשחקים בין הקבוצות הקשורות',
+  '(חוזרים על 1–3 אם עדיין יש שוויון בתת-קבוצה)',
+  'הפרש שערים כולל בבית',
+  'שערים שבוקעו כולל בבית',
+  'ציון הגינות (כרטיסים אדומים/צהובים)',
+  'דירוג FIFA',
 ]
 
 const BEST_THIRD = [
-  'Points',
-  'Goal difference',
-  'Goals scored',
-  'Conduct score',
-  'FIFA world ranking',
+  'נקודות',
+  'הפרש שערים',
+  'שערים שבוקעו',
+  'ציון הגינות',
+  'דירוג FIFA',
 ]
 
 const SCORING_TABLE = [
-  { cat: 'Group match — correct 1X2 outcome',  pts: '+1' },
-  { cat: 'Group match — correct total goals',  pts: '+2' },
-  { cat: 'Group match — correct exact score',  pts: '+3' },
-  { cat: 'Group standings — correct position (×4 per group)', pts: '+3 each' },
-  { cat: 'Team reaches Round of 32',           pts: '+4' },
-  { cat: 'Team reaches Round of 16',           pts: '+5' },
-  { cat: 'Team reaches Quarter-final',         pts: '+6' },
-  { cat: 'Team reaches Semi-final',            pts: '+7' },
-  { cat: 'Team reaches Final',                 pts: '+8' },
-  { cat: 'Knockout match — correct total goals', pts: '+2' },
-  { cat: 'Knockout match — correct exact score', pts: '+3' },
-  { cat: 'World Cup Champion',                 pts: '+15' },
-  { cat: 'Top-scoring team',                   pts: '+8' },
-  { cat: 'Golden Boot team',                   pts: '+8' },
-  { cat: 'Most goals conceded',                pts: '+10' },
-  { cat: 'Total tournament goals (exact)',      pts: '+12' },
+  { cat: 'משחק בית — 1X2 נכון (מי ניצח)',        pts: '+1 נק׳' },
+  { cat: 'משחק בית — מספר שערים נכון',           pts: '+2 נק׳' },
+  { cat: 'משחק בית — תוצאה מדויקת',              pts: '+3 נק׳' },
+  { cat: 'דירוג בית — מיקום נכון (×4 לבית)',     pts: '+3 נק׳' },
+  { cat: 'קבוצה מגיעה לשלב 32',                  pts: '+4 נק׳' },
+  { cat: 'קבוצה מגיעה לשלב 16',                  pts: '+5 נק׳' },
+  { cat: 'קבוצה מגיעה לרבע גמר',                 pts: '+6 נק׳' },
+  { cat: 'קבוצה מגיעה לחצי גמר',                 pts: '+7 נק׳' },
+  { cat: 'קבוצה מגיעה לגמר',                     pts: '+8 נק׳' },
+  { cat: 'משחק נוקאאוט — מספר שערים נכון',       pts: '+2 נק׳' },
+  { cat: 'משחק נוקאאוט — תוצאה מדויקת',          pts: '+3 נק׳' },
+  { cat: 'אלוף גביע העולם',                       pts: '+15 נק׳' },
+  { cat: 'הקבוצה הכי שערנית',                    pts: '+8 נק׳' },
+  { cat: 'קבוצת מלך השערים (עקב זהב)',           pts: '+8 נק׳' },
+  { cat: 'הקבוצה שספגה הכי הרבה שערים',          pts: '+10 נק׳' },
+  { cat: 'סך שערים בטורניר (מדויק)',             pts: '+12 נק׳' },
 ]
 
 export default function FormatPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <div className="space-y-1">
-        <h1 className="text-3xl font-extrabold text-shadow">Tournament Format</h1>
-        <p className="text-sm text-white/50">2026 FIFA World Cup — How the competition works</p>
+        <h1 className="text-3xl font-extrabold text-shadow">פורמט הטורניר</h1>
+        <p className="text-sm text-white/50">מונדיאל 2026 — כך זה עובד</p>
       </div>
 
-      {/* Overview */}
+      {/* סקירה */}
       <GlassCard className="space-y-3">
-        <h2 className="text-lg font-bold">Overview</h2>
+        <h2 className="text-lg font-bold">סקירה כללית</h2>
         <p className="text-sm text-white/70 leading-relaxed">
-          For the first time, the World Cup features <strong className="text-white">48 teams</strong> across{' '}
-          <strong className="text-white">12 groups</strong> (A–L), each with 4 teams. Every team plays
-          the other 3 in its group once — 72 group matches in total — then the best 32 advance to a
-          knockout stage that leads to the Final on July 19, 2026 in New York/New Jersey.
+          לראשונה, המונדיאל כולל <strong className="text-white">48 קבוצות</strong> ב-
+          <strong className="text-white">12 בתים</strong> (A–L), 4 קבוצות לבית. כל קבוצה משחקת נגד שלוש
+          האחרות בבית שלה — 72 משחקי בית בסך הכל — ואחר כך 32 הטובות עוברות לשלב הנוקאאוט שמסתיים בגמר
+          ב-19 ביולי 2026 בניו יורק/ניו ג׳רזי.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
           {[
-            ['48', 'Teams'],
-            ['12', 'Groups'],
-            ['72', 'Group Matches'],
-            ['32', 'R32 Teams'],
-            ['104', 'Total Matches'],
-            ['6', 'Knockout Rounds'],
+            ['48', 'קבוצות'],
+            ['12', 'בתים'],
+            ['72', 'משחקי בית'],
+            ['32', 'לשלב 32'],
+            ['104', 'סך משחקים'],
+            ['6', 'סבבי נוקאאוט'],
           ].map(([n, l]) => (
             <div key={l} className="glass rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-indigo-300">{n}</p>
@@ -77,17 +77,16 @@ export default function FormatPage() {
         </div>
       </GlassCard>
 
-      {/* Group stage */}
+      {/* שלב הבתים */}
       <GlassCard className="space-y-3">
-        <h2 className="text-lg font-bold">Group Stage</h2>
+        <h2 className="text-lg font-bold">שלב הבתים</h2>
         <p className="text-sm text-white/70 leading-relaxed">
-          Each group plays a full round-robin. Teams earn <strong className="text-white">3 pts</strong> for
-          a win, <strong className="text-white">1 pt</strong> for a draw, 0 for a loss. The top 2 teams in
-          each group advance automatically (24 teams). The 8 best 3rd-placed teams (ranked across all 12
-          groups) also advance, bringing the total to 32.
+          כל בית משחק ליגה פנימית. ניצחון = <strong className="text-white">3 נקודות</strong>,
+          תיקו = <strong className="text-white">נקודה</strong>, הפסד = 0. שתי הקבוצות הראשונות בכל בית
+          עוברות אוטומטית (24 קבוצות). 8 הקבוצות הטובות שסיימו שלישיות גם עוברות — סך הכל 32 בשלב הנוקאאוט.
         </p>
         <div>
-          <h3 className="text-sm font-semibold text-white/70 mb-2">Tiebreakers (in order)</h3>
+          <h3 className="text-sm font-semibold text-white/70 mb-2">פריסה במקרה שוויון (לפי הסדר)</h3>
           <ol className="space-y-1">
             {TIEBREAKERS.map((t, i) => (
               <li key={i} className="flex gap-2 text-sm text-white/60">
@@ -99,14 +98,13 @@ export default function FormatPage() {
         </div>
       </GlassCard>
 
-      {/* Best 3rd-place ranking */}
+      {/* שלישיות */}
       <GlassCard className="space-y-3">
-        <h2 className="text-lg font-bold">Best 8 Third-Place Teams</h2>
+        <h2 className="text-lg font-bold">8 הקבוצות הטובות במקום השלישי</h2>
         <p className="text-sm text-white/70 leading-relaxed">
-          All 12 third-placed teams are ranked by the criteria below. The top 8 join the Round of 32.
-          In the real event, a FIFA lookup table assigns each of the 8 thirds to a specific bracket slot.
-          In this prediction game, <strong className="text-white">you choose</strong> which 8 thirds
-          advance and slot them into one of the 8 designated R32 positions.
+          כל 12 הקבוצות שסיימו שלישיות מדורגות לפי הקריטריונים הבאים. 8 הטובות מהן עוברות לשלב 32.
+          בטורניר האמיתי FIFA קובעת מראש לאיזה חריץ כל שלישית נכנסת — במשחק הזה
+          <strong className="text-white"> אתם בוחרים</strong> אילו 8 שלישיות עוברות ומסדרים אותן בחריצים.
         </p>
         <ol className="space-y-1">
           {BEST_THIRD.map((t, i) => (
@@ -118,26 +116,26 @@ export default function FormatPage() {
         </ol>
       </GlassCard>
 
-      {/* Knockout */}
+      {/* נוקאאוט */}
       <GlassCard className="space-y-3">
-        <h2 className="text-lg font-bold">Knockout Stage</h2>
+        <h2 className="text-lg font-bold">שלב הנוקאאוט</h2>
         <div className="space-y-2 text-sm text-white/70">
           <p>
-            Single-elimination from the Round of 32. If level after 90 minutes:{' '}
-            <strong className="text-white">30 min extra time (2×15)</strong>, then penalty shootout.
+            נוקאאוט ישיר מסבב 32. אם תיקו אחרי 90 דקות:{' '}
+            <strong className="text-white">30 דקות הארכה (2×15)</strong>, ואז פנדלים.
           </p>
           <p>
-            Scoring in this game is based on the <strong className="text-white">90-minute result only</strong>,
-            regardless of extra time or penalties.
+            הניקוד במשחק זה מבוסס על <strong className="text-white">תוצאת 90 הדקות בלבד</strong>,
+            ללא קשר להארכה או פנדלים.
           </p>
           <div className="flex flex-col gap-1 pt-1">
             {[
-              'Round of 32 (16 matches, June 28–July 3)',
-              'Round of 16 (8 matches, July 4–7)',
-              'Quarter-finals (4 matches, July 9–11)',
-              'Semi-finals (2 matches, July 14–15)',
-              'Third-place play-off (July 18, Miami)',
-              'Final (July 19, New York/New Jersey)',
+              'שלב 32 — 16 משחקים, 28 יוני–3 יולי',
+              'שלב 16 — 8 משחקים, 4–7 יולי',
+              'רבע גמר — 4 משחקים, 9–11 יולי',
+              'חצי גמר — 2 משחקים, 14–15 יולי',
+              'משחק המקום השלישי — 18 יולי, מיאמי',
+              'גמר — 19 יולי, ניו יורק/ניו ג׳רזי',
             ].map((r) => (
               <div key={r} className="flex items-center gap-2 glass rounded-lg px-3 py-1.5 text-xs text-white/60">
                 <span className="text-indigo-400">▸</span> {r}
@@ -147,10 +145,10 @@ export default function FormatPage() {
         </div>
       </GlassCard>
 
-      {/* Scoring */}
+      {/* ניקוד */}
       <GlassCard className="space-y-3">
-        <h2 className="text-lg font-bold">Scoring System</h2>
-        <p className="text-sm text-white/50">All categories are independent and cumulative.</p>
+        <h2 className="text-lg font-bold">שיטת הניקוד</h2>
+        <p className="text-sm text-white/50">כל הקטגוריות עצמאיות ומצטברות.</p>
         <div className="divide-y divide-white/10">
           {SCORING_TABLE.map(({ cat, pts }) => (
             <div key={cat} className="flex items-center justify-between py-2">
@@ -160,15 +158,14 @@ export default function FormatPage() {
           ))}
         </div>
         <p className="text-xs text-white/30 pt-2">
-          Group match scores stack: a correct exact score always awards 1+2+3 = 6 points.
-          Correct 1X2 + correct total (but wrong exact) = 3 points. Advancement tiers are
-          independent — a correctly predicted team scores at every tier it reaches.
+          במשחקי בית הניקוד מצטבר: תוצאה מדויקת = 1+2+3 = 6 נקודות.
+          1X2 נכון + שערים נכון (אבל לא מדויק) = 3 נקודות. דירוגי ההתקדמות עצמאיים — קבוצה שנוחשה נכון מנקדת בכל שלב שהיא מגיעה אליו.
         </p>
       </GlassCard>
 
       <div className="text-center">
         <Link href="/predict" className="glass-btn-primary px-8 py-3 rounded-2xl text-sm font-semibold inline-block">
-          Build My Predictions →
+          בנה את הניחושים שלי ←
         </Link>
       </div>
     </div>

@@ -78,17 +78,17 @@ function StandingsSection({ entries }: { entries: ScoreEntry[] }) {
     return (
       <GlassCard className="text-center py-14">
         <div className="text-5xl mb-4">🏆</div>
-        <p className="text-white/50 text-sm">No scores yet — be the first to submit predictions!</p>
+        <p className="text-white/50 text-sm">עדיין אין ניקוד — היו הראשונים לשלוח ניחושים!</p>
       </GlassCard>
     )
   }
 
   const cols = [
-    { key: 'group_match_points',    label: 'Matches',    short: 'GM'  },
-    { key: 'group_standing_points', label: 'Standings',  short: 'GS'  },
-    { key: 'advancement_points',    label: 'Adv',        short: 'Adv' },
-    { key: 'knockout_score_points', label: 'Knockout',   short: 'KO'  },
-    { key: 'futures_points',        label: 'Futures',    short: 'Fut' },
+    { key: 'group_match_points',    label: 'משחקים',  short: 'מש'  },
+    { key: 'group_standing_points', label: 'בתים',    short: 'בת'  },
+    { key: 'advancement_points',    label: 'התקדמות', short: 'הת' },
+    { key: 'knockout_score_points', label: 'נוקאאוט', short: 'נק'  },
+    { key: 'futures_points',        label: 'עתידיות', short: 'עת' },
   ] as const
 
   return (
@@ -554,18 +554,18 @@ export default function LeaderboardClient({
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-shadow">Leaderboard</h1>
+        <h1 className="text-3xl font-extrabold text-shadow">טבלת ניקוד</h1>
         <p className="text-sm text-white/50 mt-1">
-          {allProfiles.length} participants · Scores update after each match · Predictions locked after first kick-off
+          {allProfiles.length} משתתפים · הניקוד מתעדכן לאחר כל משחק · הניחושים ננעלים עם קיקאוף ראשון
         </p>
       </div>
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Participants', value: allProfiles.length },
-          { label: 'Top Score',    value: topScore },
-          { label: 'Avg Score',    value: avgScore },
+          { label: 'משתתפים', value: allProfiles.length },
+          { label: 'ניקוד מוביל',    value: topScore },
+          { label: 'ממוצע',    value: avgScore },
         ].map(({ label, value }) => (
           <GlassCard key={label} className="text-center py-4">
             <p className="text-2xl font-bold text-emerald-300 tabular-nums">{value}</p>

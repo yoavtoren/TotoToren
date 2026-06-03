@@ -33,7 +33,7 @@ function CountdownBadge({ targetUtc }: { targetUtc: string }) {
     return () => clearInterval(id)
   }, [targetUtc])
 
-  if (ms <= 0) return <span className="text-[10px] text-emerald-400 font-semibold">DONE</span>
+  if (ms <= 0) return <span className="text-[10px] text-emerald-400 font-semibold">הסתיים</span>
   const d = Math.floor(ms / 86400000)
   const h = Math.floor((ms % 86400000) / 3600000)
   const m = Math.floor((ms % 3600000) / 60000)
@@ -75,7 +75,7 @@ function NextMatchHero() {
 
   return (
     <GlassCard className="text-center space-y-4 py-6">
-      <p className="text-xs text-white/40 uppercase tracking-widest">Next match countdown</p>
+      <p className="text-xs text-white/40 uppercase tracking-widest">המשחק הבא מתחיל בעוד</p>
       <div className="flex items-center justify-center gap-2 sm:gap-4">
         {units.map(({ v, l }, i, arr) => (
           <div key={l} className="flex items-center gap-2 sm:gap-4">
@@ -89,7 +89,7 @@ function NextMatchHero() {
       </div>
       <div className="space-y-0.5">
         <p className="text-sm font-semibold text-white">{label}</p>
-        <p className="text-xs text-white/40">{localDate(next.kickoff_utc)} · {localShortTime(next.kickoff_utc)} local time</p>
+        <p className="text-xs text-white/40">{localDate(next.kickoff_utc)} · {localShortTime(next.kickoff_utc)} שעון מקומי</p>
       </div>
     </GlassCard>
   )
@@ -98,8 +98,8 @@ function NextMatchHero() {
 // ── Constants ─────────────────────────────────────────────────
 
 const ROUND_LABELS: Record<string, string> = {
-  r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-finals',
-  sf: 'Semi-finals', third_place: '3rd-place play-off', final: 'Final',
+  r32: 'שלב 32', r16: 'שלב 16', qf: 'Quarter-finals',
+  sf: 'Semi-finals', third_place: 'משחק המקום השלישי', final: 'גמר',
 }
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
@@ -136,7 +136,7 @@ function MatchRow({ m, showDate = false }: { m: (typeof GROUP_MATCHES)[0]; showD
       {/* Countdown */}
       <div className="w-20 text-right shrink-0">
         {past
-          ? <span className="text-[10px] text-white/25">completed</span>
+          ? <span className="text-[10px] text-white/25">הסתיים</span>
           : <CountdownBadge targetUtc={m.kickoff_utc} />}
       </div>
     </div>
@@ -167,13 +167,13 @@ function GroupMatchesTab() {
             sortBy === v ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/70'
           )}
         >
-          {v === 'date' ? 'By Date' : 'By Group'}
+          {v === 'date' ? 'לפי תאריך' : 'לפי בית'}
         </button>
       ))}
     </div>
   )
 
-  // ── By Date view ──────────────────────────────────────────────
+  // ── לפי תאריך view ──────────────────────────────────────────────
   if (sortBy === 'date') {
     const sorted = [...GROUP_MATCHES].sort(
       (a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime()
@@ -204,7 +204,7 @@ function GroupMatchesTab() {
     )
   }
 
-  // ── By Group view ─────────────────────────────────────────────
+  // ── לפי בית view ─────────────────────────────────────────────
   return (
     <div className="space-y-2">
       {toggle}
@@ -279,7 +279,7 @@ function KnockoutTab() {
                     <div className="text-right shrink-0 space-y-0.5">
                       <p className="text-[9px] font-mono text-white/25">Match {m.match}</p>
                       {past
-                        ? <p className="text-[10px] text-white/25">completed</p>
+                        ? <p className="text-[10px] text-white/25">הסתיים</p>
                         : <CountdownBadge targetUtc={m.kickoff_utc} />}
                     </div>
                   </GlassCard>
@@ -301,15 +301,15 @@ export default function SchedulePage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold text-shadow">Match Schedule</h1>
-        <p className="text-sm text-white/50 mt-1">All 104 matches — times shown in your local timezone</p>
+        <h1 className="text-3xl font-extrabold text-shadow">לוח משחקים</h1>
+        <p className="text-sm text-white/50 mt-1">כל 104 המשחקים — השעות מוצגות בשעון המקומי שלך</p>
       </div>
 
       <NextMatchHero />
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {([['group', 'Group Stage (72)'], ['knockout', 'Knockout (32)']] as const).map(([t, label]) => (
+        {([['group', 'שלב הבתים (72)'], ['knockout', 'נוקאאוט (32)']] as const).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
