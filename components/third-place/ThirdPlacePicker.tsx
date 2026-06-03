@@ -148,12 +148,42 @@ export default function ThirdPlacePicker({
       </div>
 
       {/* Rules box */}
-      <GlassCard className="text-sm text-white/60 space-y-1 py-3">
-        <p className="font-semibold text-white/80 text-xs uppercase tracking-wider mb-2">How the 8 best thirds work</p>
-        <p>• The 12 groups each produce one 3rd-place team (shown on the right).</p>
-        <p>• The 8 best of those 12 advance to the Round of 32.</p>
-        <p>• Each R32 slot can only be filled by a team from specific groups (shown in the slot).</p>
-        <p>• In this prediction game, just drag any of your 8 chosen thirds into any slot.</p>
+      <GlassCard className="space-y-3 py-3">
+        <p className="font-semibold text-white/80 text-xs uppercase tracking-wider">How the 8 best 3rd-place teams work</p>
+
+        <div className="text-sm text-white/60 space-y-1.5">
+          <p>
+            Each of the 12 groups (A–L) finishes with a team ranked <strong className="text-white">3rd out of 4</strong>.
+            That gives us 12 third-place teams total.
+          </p>
+          <p>
+            These 12 teams are ranked against each other and only the{' '}
+            <strong className="text-white">top 8</strong> advance to the Round of 32 —
+            the bottom 4 go home.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Ranking criteria (in order)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-white/60">
+            {[
+              ['1', 'Points earned in group stage'],
+              ['2', 'Goal difference'],
+              ['3', 'Goals scored'],
+              ['4', 'Fair-play (conduct) score'],
+              ['5', 'FIFA world ranking'],
+            ].map(([n, rule]) => (
+              <div key={n} className="flex items-center gap-2 glass rounded-lg px-3 py-1.5">
+                <span className="text-indigo-400 font-bold w-3">{n}.</span>
+                <span>{rule}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="text-xs text-white/40 border-t border-white/10 pt-2">
+          In this game: predict which 8 of the 12 thirds you think will qualify, then drag each into one of the 8 R32 slots below.
+        </p>
       </GlassCard>
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
