@@ -65,10 +65,10 @@ export function usePredictions(initial?: PredictionsInitial) {
 
   // ── Group match scores ────────────────────────────────────────
   const setGroupMatchScore = useCallback(
-    (matchId: number, side: 'home' | 'away' | 'total', value: string) => {
+    (matchId: number, side: 'outcome' | 'total' | 'home' | 'away', value: string) => {
       setGroupMatchScoresState((prev) => ({
         ...prev,
-        [matchId]: { ...(prev[matchId] ?? { home: '', away: '', total: '' }), [side]: value },
+        [matchId]: { ...(prev[matchId] ?? { outcome: '', total: '', home: '', away: '' }), [side]: value },
       }))
     },
     []
@@ -88,13 +88,15 @@ export function usePredictions(initial?: PredictionsInitial) {
   // ── Bracket winners (cascades downstream) ────────────────────
   const setBracketWinner = useCallback(
     (matchNum: number, teamId: number | null) => {
-      // -1 is the deselect signal from clicking a selected winner
-      const resolvedId = teamId === -1 ? null : teamId
       setBracketWinnersState((prev) => {
-        const next = { ...prev, [matchNum]: resolvedId }
-        // Clear all matches that depended on this one (feeder cascade)
+        const next = { ...prev }
+        // Clear all downstream picks before setting the new value
         clearDownstream(next, matchNum)
-        next[matchNum] = teamId
+        if (teamId === null) {
+          delete next[matchNum]
+        } else {
+          next[matchNum] = teamId
+        }
         return next
       })
     },
@@ -136,7 +138,7 @@ export function usePredictions(initial?: PredictionsInitial) {
   // ── Completion stats ─────────────────────────────────────────
   const completionStats = useMemo((): CompletionStats => {
     const groupMatchsFilled = Object.values(groupMatchScores).filter(
-      (s) => s.home !== '' && s.away !== ''
+      (s) => s.outcome !== '' || (s.home !== '' && s.away !== '') || s.total !== ''
     ).length
     const groupStandingsFilled = GROUP_LETTERS.filter(
       (g) => (groupOrder[g]?.length ?? 0) === 4

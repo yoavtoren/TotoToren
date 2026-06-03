@@ -107,7 +107,7 @@ export interface GroupOrder {
 }
 
 export interface GroupMatchScores {
-  [matchId: number]: { home: string; away: string; total: string }
+  [matchId: number]: { outcome: string; total: string; home: string; away: string }
 }
 
 // third-place assignment: R32 match number → teamId

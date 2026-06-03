@@ -54,7 +54,7 @@ interface MatchCardProps {
   matchNum: number
   homeId: number | null; awayId: number | null; winnerId: number | null
   homeScore: string; awayScore: string
-  onPickWinner: (id: number) => void
+  onPickWinner: (id: number | null) => void
   onScoreChange: (side: 'home' | 'away', val: string) => void
   disabled?: boolean
   highlight?: boolean
@@ -70,14 +70,19 @@ function MatchCard({
   const TeamRow = ({ teamId }: { teamId: number | null }) => {
     const team = teamId ? getTeamById(teamId) : null
     const isWinner = winnerId !== null && winnerId === teamId && teamId !== null
+    const clickable = canPick && !!teamId
     return (
       <button
-        onClick={() => teamId && canPick && onPickWinner(teamId)}
-        disabled={!canPick || !teamId}
+        onClick={() => {
+          if (!clickable) return
+          // clicking the already-picked winner deselects it (undo)
+          onPickWinner(isWinner ? null : teamId)
+        }}
+        disabled={!clickable}
         className={cn(
-          'flex items-center gap-1 w-full px-1.5 py-[5px] rounded text-left transition-all text-[11px]',
+          'group flex items-center gap-1 w-full px-1.5 py-[5px] rounded text-left transition-all text-[11px]',
           isWinner
-            ? 'bg-emerald-500/25 text-emerald-100 font-semibold'
+            ? 'bg-emerald-500/25 text-emerald-100 font-semibold hover:bg-red-500/20'
             : team && canPick
               ? 'hover:bg-white/10 text-white/80 cursor-pointer'
               : 'text-white/25 cursor-default',
@@ -87,7 +92,12 @@ function MatchCard({
           <>
             <span className="text-xs leading-none">{getFlagEmoji(team.flag_code)}</span>
             <span className="flex-1 truncate leading-none">{team.name}</span>
-            {isWinner && <span className="text-emerald-400 text-[9px]">★</span>}
+            {isWinner && (
+              <span className="text-emerald-400 text-[9px] group-hover:hidden">★</span>
+            )}
+            {isWinner && (
+              <span className="hidden text-red-400 text-[9px] group-hover:inline">✕</span>
+            )}
           </>
         ) : (
           <span className="italic text-white/15 text-[10px]">TBD</span>
@@ -211,7 +221,7 @@ interface KnockoutBracketProps {
   thirdPlace: ThirdPlaceState
   bracketWinners: BracketWinners
   knockoutScores: KnockoutScores
-  onPickWinner: (matchNum: number, teamId: number) => void
+  onPickWinner: (matchNum: number, teamId: number | null) => void
   onScoreChange: (matchNum: number, side: 'home' | 'away', value: string) => void
   disabled?: boolean
 }

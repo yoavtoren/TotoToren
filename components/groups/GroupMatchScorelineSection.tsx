@@ -10,26 +10,11 @@ import type { GroupMatchScores } from '@/types'
 
 interface GroupMatchScorelineSectionProps {
   scores: GroupMatchScores
-  onScoreChange: (matchId: number, side: 'home' | 'away' | 'total', value: string) => void
+  onScoreChange: (matchId: number, side: 'outcome' | 'total' | 'home' | 'away', value: string) => void
   disabled?: boolean
 }
 
-// Derive 1X2 from current score inputs
-function deriveOutcome(home: string, away: string): '1' | 'X' | '2' | null {
-  const h = parseInt(home), a = parseInt(away)
-  if (isNaN(h) || isNaN(a)) return null
-  if (h > a) return '1'
-  if (a > h) return '2'
-  return 'X'
-}
-
-// Default scores for each outcome (used when clicking 1/X/2 buttons)
-const OUTCOME_DEFAULTS: Record<'1' | 'X' | '2', { home: string; away: string }> = {
-  '1': { home: '1', away: '0' },
-  'X': { home: '1', away: '1' },
-  '2': { home: '0', away: '1' },
-}
-
+// No auto-derive — each field is fully independent
 const OUTCOME_STYLES: Record<'1' | 'X' | '2', string> = {
   '1': 'bg-blue-500/30 text-blue-200 border-blue-400/50',
   'X': 'bg-amber-500/30 text-amber-200 border-amber-400/50',
@@ -63,16 +48,9 @@ export default function GroupMatchScorelineSection({
     }, 50)
   }
 
-  const handleOutcomeClick = (matchId: number, outcome: '1' | 'X' | '2', current: '1' | 'X' | '2' | null) => {
-    if (current === outcome) {
-      // toggle off — clear the score
-      onScoreChange(matchId, 'home', '')
-      onScoreChange(matchId, 'away', '')
-    } else {
-      const defaults = OUTCOME_DEFAULTS[outcome]
-      onScoreChange(matchId, 'home', defaults.home)
-      onScoreChange(matchId, 'away', defaults.away)
-    }
+  // 1X2 is fully independent — only touches 'outcome', never home/away/total
+  const handleOutcomeClick = (matchId: number, clicked: '1' | 'X' | '2', current: string) => {
+    onScoreChange(matchId, 'outcome', current === clicked ? '' : clicked)
   }
 
   return (
@@ -124,7 +102,7 @@ export default function GroupMatchScorelineSection({
                     const homeTeam = getTeamById(getTeamIdByName(match.home) ?? 0)
                     const awayTeam = getTeamById(getTeamIdByName(match.away) ?? 0)
                     const s = scores[match.match]
-                    const outcome = deriveOutcome(s?.home ?? '', s?.away ?? '')
+                    const outcome = s?.outcome ?? ''  // independent from score
 
                     return (
                       <div key={match.match} className="flex items-center gap-2 px-4 py-3">
@@ -139,7 +117,7 @@ export default function GroupMatchScorelineSection({
                           {homeTeam && <span className="text-base shrink-0">{getFlagEmoji(homeTeam.flag_code)}</span>}
                         </div>
 
-                        {/* 1/X/2 buttons — click again to deselect */}
+                        {/* 1/X/2 — independent, click again to deselect */}
                         {(['1','X','2'] as const).map(o => (
                           <button
                             key={o}
@@ -148,7 +126,7 @@ export default function GroupMatchScorelineSection({
                             className={cn(
                               'w-11 h-10 rounded-lg border text-sm font-bold transition-all shrink-0',
                               outcome === o
-                                ? OUTCOME_STYLES[o]
+                                ? OUTCOME_STYLES[o as '1'|'X'|'2']
                                 : 'border-white/15 text-white/30 hover:text-white/70 hover:border-white/30'
                             )}
                           >
@@ -202,9 +180,9 @@ export default function GroupMatchScorelineSection({
                         </div>
 
                         {/* Clear all */}
-                        {(s?.home || s?.away || s?.total) && !disabled && (
+                        {(s?.outcome || s?.home || s?.away || s?.total) && !disabled && (
                           <button
-                            onClick={() => { onScoreChange(match.match, 'home', ''); onScoreChange(match.match, 'away', ''); onScoreChange(match.match, 'total', '') }}
+                            onClick={() => { onScoreChange(match.match, 'outcome', ''); onScoreChange(match.match, 'home', ''); onScoreChange(match.match, 'away', ''); onScoreChange(match.match, 'total', '') }}
                             className="text-white/20 hover:text-red-400 text-xs transition-colors shrink-0"
                             title="Clear score"
                           >✕</button>

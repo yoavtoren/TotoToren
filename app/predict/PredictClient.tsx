@@ -48,9 +48,10 @@ function buildInitial(
   const groupMatchScores: GroupMatchScores = {}
   for (const m of matchPreds) {
     groupMatchScores[m.match_id] = {
-      home: m.predicted_home != null ? String(m.predicted_home) : '',
-      away: m.predicted_away != null ? String(m.predicted_away) : '',
-      total: (m as any).predicted_total_goals != null ? String((m as any).predicted_total_goals) : '',
+      outcome: (m as any).predicted_outcome ?? '',
+      total:   (m as any).predicted_total_goals != null ? String((m as any).predicted_total_goals) : '',
+      home:    m.predicted_home != null ? String(m.predicted_home) : '',
+      away:    m.predicted_away != null ? String(m.predicted_away) : '',
     }
   }
 
@@ -122,14 +123,15 @@ export default function PredictClient({
         }))
       )
 
-      // Part 1 — group match scores (save any row where at least one field is filled)
+      // Part 1 — save any match where at least one prediction is filled
       const matchRows = Object.entries(groupMatchScores)
-        .filter(([, s]) => s.home !== '' || s.away !== '' || s.total !== '')
+        .filter(([, s]) => s.outcome !== '' || s.total !== '' || s.home !== '' || s.away !== '')
         .map(([matchId, s]) => ({
           user_id: userId, match_id: parseInt(matchId),
-          predicted_home:        s.home  !== '' ? parseInt(s.home)  : null,
-          predicted_away:        s.away  !== '' ? parseInt(s.away)  : null,
-          predicted_total_goals: s.total !== '' ? parseInt(s.total) : null,
+          predicted_outcome:     s.outcome !== '' ? s.outcome : null,
+          predicted_total_goals: s.total   !== '' ? parseInt(s.total) : null,
+          predicted_home:        s.home    !== '' ? parseInt(s.home)  : null,
+          predicted_away:        s.away    !== '' ? parseInt(s.away)  : null,
           updated_at: new Date().toISOString(),
         }))
 

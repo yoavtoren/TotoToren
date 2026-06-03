@@ -104,22 +104,119 @@ const ROUND_LABELS: Record<string, string> = {
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
+// ── Shared match row ──────────────────────────────────────────
+
+function MatchRow({ m, showDate = false }: { m: (typeof GROUP_MATCHES)[0]; showDate?: boolean }) {
+  const past = new Date(m.kickoff_utc).getTime() < Date.now()
+  const homeT = teamByName(m.home)
+  const awayT = teamByName(m.away)
+  return (
+    <div className={cn('flex items-center gap-3 px-4 py-3', past && 'opacity-40')}>
+      {/* Time + optional date */}
+      <div className="w-20 shrink-0">
+        {showDate && <p className="text-[10px] text-white/40 font-mono">{localDate(m.kickoff_utc)}</p>}
+        <p className="text-xs font-mono font-semibold text-white/80">{localShortTime(m.kickoff_utc)}</p>
+        <p className="text-[9px] text-white/25 mt-0.5">Group {(m as any).group}</p>
+      </div>
+
+      {/* Home */}
+      <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+        <span className="text-xs text-white font-medium truncate">{m.home}</span>
+        {homeT && <span className="text-base shrink-0">{getFlagEmoji(homeT.flag_code)}</span>}
+      </div>
+
+      <span className="text-white/25 text-xs font-bold shrink-0">vs</span>
+
+      {/* Away */}
+      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+        {awayT && <span className="text-base shrink-0">{getFlagEmoji(awayT.flag_code)}</span>}
+        <span className="text-xs text-white font-medium truncate">{m.away}</span>
+      </div>
+
+      {/* Countdown */}
+      <div className="w-20 text-right shrink-0">
+        {past
+          ? <span className="text-[10px] text-white/25">completed</span>
+          : <CountdownBadge targetUtc={m.kickoff_utc} />}
+      </div>
+    </div>
+  )
+}
+
 // ── Group matches tab ─────────────────────────────────────────
 
 function GroupMatchesTab() {
-  const [openGroup, setOpenGroup] = useState<string>('A')
+  const [sortBy, setSortBy] = useState<'date' | 'group'>('date')
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(['A']))
 
+  const toggleGroup = (g: string) => setOpenGroups(prev => {
+    const next = new Set(prev)
+    next.has(g) ? next.delete(g) : next.add(g)
+    return next
+  })
+
+  // Sort toggle
+  const toggle = (
+    <div className="flex gap-1 p-1 glass rounded-xl w-fit">
+      {(['date', 'group'] as const).map(v => (
+        <button
+          key={v}
+          onClick={() => setSortBy(v)}
+          className={cn(
+            'px-4 py-1.5 rounded-lg text-xs font-medium transition-colors',
+            sortBy === v ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/70'
+          )}
+        >
+          {v === 'date' ? 'By Date' : 'By Group'}
+        </button>
+      ))}
+    </div>
+  )
+
+  // ── By Date view ──────────────────────────────────────────────
+  if (sortBy === 'date') {
+    const sorted = [...GROUP_MATCHES].sort(
+      (a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime()
+    )
+    const byDay = new Map<string, typeof sorted>()
+    for (const m of sorted) {
+      const key = new Date(m.kickoff_utc).toLocaleDateString(undefined, {
+        weekday: 'short', day: 'numeric', month: 'short',
+      })
+      if (!byDay.has(key)) byDay.set(key, [])
+      byDay.get(key)!.push(m)
+    }
+
+    return (
+      <div className="space-y-3">
+        {toggle}
+        {[...byDay.entries()].map(([day, matches]) => (
+          <div key={day} className="space-y-0">
+            <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 pb-1">{day}</p>
+            <GlassCard className="p-0 overflow-hidden">
+              <div className="divide-y divide-white/5">
+                {matches.map(m => <MatchRow key={m.match} m={m} />)}
+              </div>
+            </GlassCard>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // ── By Group view ─────────────────────────────────────────────
   return (
     <div className="space-y-2">
+      {toggle}
       {GROUPS.map(g => {
         const matches = GROUP_MATCHES_BY_GROUP[g] ?? []
-        const isOpen = openGroup === g
+        const isOpen = openGroups.has(g)
         const teams = [...new Set(matches.flatMap(m => [m.home, m.away]))]
 
         return (
           <GlassCard key={g} className="p-0 overflow-hidden">
             <button
-              onClick={() => setOpenGroup(isOpen ? '' : g)}
+              onClick={() => toggleGroup(g)}
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -136,41 +233,7 @@ function GroupMatchesTab() {
 
             {isOpen && (
               <div className="border-t border-white/10 divide-y divide-white/5">
-                {matches.map(m => {
-                  const past = new Date(m.kickoff_utc).getTime() < Date.now()
-                  const homeT = teamByName(m.home)
-                  const awayT = teamByName(m.away)
-                  return (
-                    <div key={m.match} className={cn('flex items-center gap-3 px-4 py-3', past && 'opacity-50')}>
-                      {/* Date + time */}
-                      <div className="w-24 shrink-0">
-                        <p className="text-[10px] text-white/40">{localDate(m.kickoff_utc)}</p>
-                        <p className="text-xs font-mono font-semibold text-white/80">{localShortTime(m.kickoff_utc)}</p>
-                      </div>
-
-                      {/* Home */}
-                      <div className="flex items-center gap-1.5 flex-1 justify-end">
-                        <span className="text-xs text-white font-medium truncate">{m.home}</span>
-                        {homeT && <span className="text-lg shrink-0">{getFlagEmoji(homeT.flag_code)}</span>}
-                      </div>
-
-                      <span className="text-white/25 text-xs font-bold shrink-0">vs</span>
-
-                      {/* Away */}
-                      <div className="flex items-center gap-1.5 flex-1">
-                        {awayT && <span className="text-lg shrink-0">{getFlagEmoji(awayT.flag_code)}</span>}
-                        <span className="text-xs text-white font-medium truncate">{m.away}</span>
-                      </div>
-
-                      {/* Countdown */}
-                      <div className="w-20 text-right shrink-0">
-                        {past
-                          ? <span className="text-[10px] text-white/25">completed</span>
-                          : <CountdownBadge targetUtc={m.kickoff_utc} />}
-                      </div>
-                    </div>
-                  )
-                })}
+                {matches.map(m => <MatchRow key={m.match} m={m} showDate />)}
               </div>
             )}
           </GlassCard>
