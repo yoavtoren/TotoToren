@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useTransition } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { TEAMS, getFlagEmoji, getTeamById } from '@/data/teams'
+import { TEAMS, getFlagEmoji, getTeamById, getTeamIdByName } from '@/data/teams'
 import { GROUP_MATCHES } from '@/data/match-schedule'
 import { cn, pad } from '@/lib/utils'
 import type { Profile } from '@/types'
@@ -104,26 +104,37 @@ function MatchCard({ match, label, color }: {
   label: string
   color: 'blue' | 'emerald'
 }) {
+  const homeTeam = getTeamById(getTeamIdByName(match.home) ?? 0)
+  const awayTeam = getTeamById(getTeamIdByName(match.away) ?? 0)
   const localDate = new Date(match.kickoff_utc).toLocaleDateString('he-IL', {
     weekday: 'short', day: 'numeric', month: 'short',
   })
   const localTime = new Date(match.kickoff_utc).toLocaleTimeString('he-IL', {
     hour: '2-digit', minute: '2-digit',
   })
-  const accentColor = color === 'blue' ? 'text-blue-400' : 'text-emerald-400'
+  const accent = color === 'blue'
+    ? { label: 'text-blue-300', dot: 'bg-blue-400', border: 'border-blue-400/20' }
+    : { label: 'text-emerald-300', dot: 'bg-emerald-400', border: 'border-emerald-400/20' }
   return (
-    <div className="bg-white/5 rounded-xl p-4 space-y-3 border border-white/8">
-      <div className="flex items-center justify-between">
-        <span className={cn('text-[10px] font-bold uppercase tracking-wider', accentColor)}>{label}</span>
-        <span className="text-[10px] text-white/30 font-mono">בית {(match as any).group}</span>
+    <div className={cn('rounded-xl p-4 space-y-3 border bg-white/5', accent.border)}>
+      <div className="flex items-center gap-1.5">
+        <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', accent.dot)} />
+        <span className={cn('text-[10px] font-bold uppercase tracking-wider', accent.label)}>{label}</span>
+        <span className="text-[10px] text-white/25 font-mono mr-auto">Group {(match as any).group}</span>
       </div>
       <div dir="ltr" className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-white flex-1 truncate">{match.home}</span>
-        <span className="text-white/25 text-xs font-bold px-2 shrink-0">vs</span>
-        <span className="text-sm font-semibold text-white flex-1 text-right truncate">{match.away}</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {homeTeam && <span className="text-lg shrink-0">{getFlagEmoji(homeTeam.flag_code)}</span>}
+          <span className="text-sm font-semibold text-white truncate">{match.home}</span>
+        </div>
+        <span className="text-white/20 text-xs font-bold px-1 shrink-0">—</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+          <span className="text-sm font-semibold text-white truncate text-right">{match.away}</span>
+          {awayTeam && <span className="text-lg shrink-0">{getFlagEmoji(awayTeam.flag_code)}</span>}
+        </div>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-white/35">{localDate} · {localTime}</span>
+        <span className="text-[11px] text-white/30">{localDate} · {localTime}</span>
         <Countdown targetUtc={match.kickoff_utc} />
       </div>
     </div>

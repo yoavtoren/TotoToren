@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { GROUP_LETTERS } from '@/lib/constants'
 import { GROUP_MATCHES_BY_GROUP } from '@/data/match-schedule'
 import { getTeamIdByName, getFlagEmoji, getTeamById } from '@/data/teams'
@@ -34,7 +34,7 @@ export default function GroupMatchScorelineSection({
 }: GroupMatchScorelineSectionProps) {
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(['A']))
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
-  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoAdvanceTimer = useRef<number | null>(null)
 
   const focusKey = (nextKey: string) => {
     const nextMatchId = parseInt(nextKey.split('-')[0])
@@ -256,7 +256,7 @@ export default function GroupMatchScorelineSection({
                                 focusNextTotal(`${match.match}-total`)
                               } else if (v !== '') {
                                 if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current)
-                                autoAdvanceTimer.current = setTimeout(() => focusNextTotal(`${match.match}-total`), 800)
+                                autoAdvanceTimer.current = window.setTimeout(() => focusNextTotal(`${match.match}-total`), 800)
                               }
                             }}
                             disabled={disabled}
