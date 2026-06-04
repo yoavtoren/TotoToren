@@ -157,46 +157,59 @@ export default function GroupMatchScorelineSection({
                         </div>
 
                         {/* Row 3: Σ total + exact score + winner label */}
-                        <div className="flex items-center justify-center gap-3 px-3 py-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-amber-400/60 font-bold">🥅</span>
-                            <input
-                              type="number" min="0" max="30"
-                              value={s?.total ?? ''}
-                              onChange={e => onScoreChange(match.match, 'total', e.target.value)}
-                              disabled={disabled}
-                              placeholder="–"
-                              className={cn(
-                                'glass-input w-11 h-9 text-center px-0 text-sm font-mono',
-                                s?.total ? 'bg-amber-500/25 border border-amber-400/40 text-amber-200' : 'border border-amber-400/20 text-white/50',
-                              )}
-                            />
-                          </div>
-                          <div className="w-px h-5 bg-white/10" />
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number" min="0" max="20"
-                              value={s?.home ?? ''}
-                              onChange={e => onScoreChange(match.match, 'home', e.target.value)}
-                              disabled={disabled}
-                              placeholder="–"
-                              className={cn(
-                                'glass-input w-11 h-9 text-center px-0 text-sm font-mono',
-                                s?.home ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50',
-                              )}
-                            />
-                            <span className="text-white/30 text-sm font-bold">:</span>
-                            <input
-                              type="number" min="0" max="20"
-                              value={s?.away ?? ''}
-                              onChange={e => onScoreChange(match.match, 'away', e.target.value)}
-                              disabled={disabled}
-                              placeholder="–"
-                              className={cn(
-                                'glass-input w-11 h-9 text-center px-0 text-sm font-mono',
-                                s?.away ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50',
-                              )}
-                            />
+                        <div className="flex flex-col items-center gap-1.5 px-3 py-2">
+                          <div className="flex items-center justify-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-flex items-center justify-center w-5 h-5 bg-white/15 rounded-full text-xs shrink-0">⚽</span>
+                              <input
+                                type="number" min="0" max="30"
+                                value={s?.total ?? ''}
+                                onChange={e => onScoreChange(match.match, 'total', e.target.value)}
+                                disabled={disabled}
+                                placeholder="–"
+                                className={cn(
+                                  'glass-input w-11 h-9 text-center px-0 text-sm font-mono',
+                                  s?.total ? 'bg-amber-500/25 border border-amber-400/40 text-amber-200' : 'border border-amber-400/20 text-white/50',
+                                )}
+                              />
+                            </div>
+                            <div className="w-px h-5 bg-white/10" />
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number" min="0" max="20"
+                                value={s?.home ?? ''}
+                                onChange={e => onScoreChange(match.match, 'home', e.target.value)}
+                                disabled={disabled}
+                                placeholder="–"
+                                className={cn(
+                                  'glass-input w-11 h-9 text-center px-0 text-sm font-mono',
+                                  s?.home ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50',
+                                )}
+                              />
+                              <span className="text-white/30 text-sm font-bold">:</span>
+                              <input
+                                type="number" min="0" max="20"
+                                value={s?.away ?? ''}
+                                onChange={e => onScoreChange(match.match, 'away', e.target.value)}
+                                disabled={disabled}
+                                placeholder="–"
+                                className={cn(
+                                  'glass-input w-11 h-9 text-center px-0 text-sm font-mono',
+                                  s?.away ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50',
+                                )}
+                              />
+                            </div>
+                            {hasValues && !disabled && (
+                              <button
+                                onClick={() => {
+                                  onScoreChange(match.match, 'outcome', '')
+                                  onScoreChange(match.match, 'home', '')
+                                  onScoreChange(match.match, 'away', '')
+                                  onScoreChange(match.match, 'total', '')
+                                }}
+                                className="text-white/20 active:text-red-400 text-xs transition-colors shrink-0"
+                              >✕</button>
+                            )}
                           </div>
                           {(() => {
                             const h = s?.home !== '' ? Number(s?.home) : null
@@ -205,24 +218,13 @@ export default function GroupMatchScorelineSection({
                             const winner = h > a ? match.home : a > h ? match.away : null
                             return (
                               <span dir="rtl" className={cn(
-                                'text-[9px] font-semibold flex-1 min-w-0 leading-tight text-center break-words',
+                                'text-[9px] font-semibold leading-tight text-center',
                                 winner ? 'text-emerald-300/80' : 'text-white/40',
                               )}>
                                 {winner ? `ניצחון ל${winner}` : 'תיקו'}
                               </span>
                             )
                           })()}
-                          {hasValues && !disabled && (
-                            <button
-                              onClick={() => {
-                                onScoreChange(match.match, 'outcome', '')
-                                onScoreChange(match.match, 'home', '')
-                                onScoreChange(match.match, 'away', '')
-                                onScoreChange(match.match, 'total', '')
-                              }}
-                              className="text-white/20 active:text-red-400 text-xs transition-colors shrink-0"
-                            >✕</button>
-                          )}
                         </div>
                       </div>
 
@@ -259,9 +261,10 @@ export default function GroupMatchScorelineSection({
                         </div>
 
                         {/* Row 3: Σ total + exact score + winner label */}
-                        <div className="flex items-center justify-center gap-3 px-4 py-2.5">
+                        <div className="flex flex-col items-center gap-1.5 px-4 py-2.5">
+                          <div className="flex items-center justify-center gap-3">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-amber-400/60 font-bold">🥅</span>
+                            <span className="inline-flex items-center justify-center w-5 h-5 bg-white/15 rounded-full text-xs shrink-0">⚽</span>
                             <input
                               ref={el => { if (el) inputRefs.current.set(`${match.match}-total`, el) }}
                               type="number" min="0" max="30"
@@ -321,20 +324,6 @@ export default function GroupMatchScorelineSection({
                               )}
                             />
                           </div>
-                          {(() => {
-                            const h = s?.home !== '' ? Number(s?.home) : null
-                            const a = s?.away !== '' ? Number(s?.away) : null
-                            if (h === null || a === null || s?.home === '' || s?.away === '') return null
-                            const winner = h > a ? match.home : a > h ? match.away : null
-                            return (
-                              <span dir="rtl" className={cn(
-                                'text-[10px] font-semibold flex-1 min-w-0 leading-tight text-center break-words',
-                                winner ? 'text-emerald-300/80' : 'text-white/40',
-                              )}>
-                                {winner ? `ניצחון ל${winner}` : 'תיקו'}
-                              </span>
-                            )
-                          })()}
                           {hasValues && !disabled && (
                             <button
                               onClick={() => { onScoreChange(match.match, 'outcome', ''); onScoreChange(match.match, 'home', ''); onScoreChange(match.match, 'away', ''); onScoreChange(match.match, 'total', '') }}
@@ -342,7 +331,22 @@ export default function GroupMatchScorelineSection({
                               title="Clear score"
                             >✕</button>
                           )}
-                        </div>
+                          </div>{/* end justify-center row */}
+                          {(() => {
+                            const h = s?.home !== '' ? Number(s?.home) : null
+                            const a = s?.away !== '' ? Number(s?.away) : null
+                            if (h === null || a === null || s?.home === '' || s?.away === '') return null
+                            const winner = h > a ? match.home : a > h ? match.away : null
+                            return (
+                              <span dir="rtl" className={cn(
+                                'text-[10px] font-semibold leading-tight text-center',
+                                winner ? 'text-emerald-300/80' : 'text-white/40',
+                              )}>
+                                {winner ? `ניצחון ל${winner}` : 'תיקו'}
+                              </span>
+                            )
+                          })()}
+                        </div>{/* end flex-col */}
                       </div>
                       </div>
                     )
