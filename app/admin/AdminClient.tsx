@@ -24,6 +24,7 @@ export default function AdminClient({
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>({})
   const [saving, setSaving] = useState<number | null>(null)
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set())
+  const [resetting, setResetting] = useState<number | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set([GROUP_LETTERS[0]]))
@@ -84,6 +85,19 @@ export default function AdminClient({
 
   function setScore(id: number, side: 'home' | 'away', val: string) {
     setScores(p => ({ ...p, [id]: { ...(p[id] ?? { home: '', away: '' }), [side]: val } }))
+  }
+
+  async function handleReset(matchId: number) {
+    if (!confirm('מחוק את תוצאת המשחק?')) return
+    setResetting(matchId)
+    const res = await fetch('/api/admin/reset-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ matchId }),
+    })
+    setResetting(null)
+    if (res.ok) { showToast('תוצאה נמחקה ✓'); window.location.reload() }
+    else showToast((await res.json()).error, false)
   }
 
   function renderRow(m: Match) {
@@ -154,6 +168,21 @@ export default function AdminClient({
         >
           {saving === m.id ? '…' : isSaved ? '✓ נשמר' : 'שמור'}
         </button>
+        {/* Reset button — shown when result exists */}
+        {hasResult && (
+          <button
+            onClick={() => handleReset(m.id)}
+            disabled={resetting === m.id}
+            title="מחק תוצאה"
+            style={{
+              flexShrink: 0, padding: '5px 8px', borderRadius: 7,
+              border: '1px solid #fc8181', background: 'transparent',
+              color: '#fc8181', fontSize: 12, cursor: 'pointer',
+            }}
+          >
+            {resetting === m.id ? '…' : '↩'}
+          </button>
+        )}
       </div>
     )
   }
@@ -337,8 +366,8 @@ export default function AdminClient({
           </section>
         )}
 
-        {/* Knockout Advancement */}
-        {knockoutMatches.length > 0 && (() => {
+        {/* Knockout Advancement — placeholder, real one is after 3rd qualifiers */}
+        {false && (() => {
           const winnerOf = (m: Match) =>
             m.home_score !== null && m.away_score !== null && m.home_team_id && m.away_team_id
               ? (m.home_score > m.away_score ? m.home_team_id : m.away_team_id)
@@ -450,13 +479,25 @@ export default function AdminClient({
                       </select>
                     </div>
                   ))}
-                  <button
-                    onClick={() => handleSaveStanding(g)}
-                    disabled={savingStanding === g}
-                    style={{ marginTop: 6, width: '100%', padding: '6px 0', borderRadius: 7, border: 'none', background: done === 4 ? '#3182ce' : '#a0aec0', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    {savingStanding === g ? '…' : 'שמור בית ' + g}
-                  </button>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                    <button
+                      onClick={() => handleSaveStanding(g)}
+                      disabled={savingStanding === g}
+                      style={{ flex: 1, padding: '6px 0', borderRadius: 7, border: 'none', background: done === 4 ? '#3182ce' : '#a0aec0', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      {savingStanding === g ? '…' : 'שמור בית ' + g}
+                    </button>
+                    {done > 0 && (
+                      <button
+                        onClick={() => {
+                          setStandings(p => ({ ...p, [g]: [0,0,0,0] }))
+                          handleSaveStanding(g)
+                        }}
+                        title="איפוס דירוג"
+                        style={{ padding: '6px 10px', borderRadius: 7, border: '1px solid #fc8181', background: 'transparent', color: '#fc8181', fontSize: 12, cursor: 'pointer' }}
+                      >↩</button>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -512,6 +553,67 @@ export default function AdminClient({
             </button>
           </div>
         </section>
+
+        {/* Knockout Advancement — after 3rd place qualifiers */}
+        {knockoutMatches.length > 0 && (() => {
+          const winnerOf = (m: Match) =>
+            m.home_score !== null && m.away_score !== null && m.home_team_id && m.away_team_id
+              ? (m.home_score > m.away_score ? m.home_team_id : m.away_team_id)
+              : null
+          const tiers = [
+            { stage: 'r32',   label: 'עלו לשמינית גמר',   pts: 5 },
+            { stage: 'r16',   label: 'עלו לרבע גמר',      pts: 6 },
+            { stage: 'qf',    label: 'עלו לחצי גמר',      pts: 7 },
+            { stage: 'sf',    label: 'עלו לגמר',           pts: 8 },
+            { stage: 'final', label: 'אלוף',               pts: 15 },
+          ]
+          return (
+            <section style={{ marginTop: 24 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
+                נבחרות שעלו בכל שלב
+              </h2>
+              <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+                מחושב אוטומטית. ניקוד לכל נבחרת שניחשת נכון.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {tiers.map(({ stage, label, pts }) => {
+                  const ms = knockoutMatches.filter(m => m.stage === stage)
+                  const ids = ms.map(winnerOf).filter(Boolean) as number[]
+                  return (
+                    <div key={stage} style={{ background: '#fff', borderRadius: 10, padding: '12px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: ids.length > 0 ? 10 : 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: ids.length === ms.length && ms.length > 0 ? '#c6f6d5' : '#e2e8f0', color: ids.length === ms.length && ms.length > 0 ? '#276749' : '#718096' }}>
+                            {ids.length}/{ms.length}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#3182ce', background: '#ebf8ff', padding: '3px 10px', borderRadius: 20 }}>
+                          +{pts} נק׳ לכל נבחרת נכונה
+                        </span>
+                      </div>
+                      {ids.length > 0 ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {ids.map(id => {
+                            const t = getTeamById(id)
+                            return t ? (
+                              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f7fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px' }}>
+                                <span style={{ fontSize: 18 }}>{getFlagEmoji(t.flag_code)}</span>
+                                <span style={{ fontSize: 13, fontWeight: 600 }}>{t.name}</span>
+                              </div>
+                            ) : null
+                          })}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 12, color: '#a0aec0' }}>— הזן תוצאות משחקים תחילה —</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )
+        })()}
 
         {/* Futures Results */}
         <section style={{ marginTop: 24 }}>
