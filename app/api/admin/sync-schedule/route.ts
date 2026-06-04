@@ -21,8 +21,6 @@ export async function POST(request: NextRequest) {
     home_team_id: getTeamIdByName(m.home) ?? null,
     away_team_id: getTeamIdByName(m.away) ?? null,
     scheduled_at: m.kickoff_utc,
-    feeds_into_slot: null,
-    feeds_into_side: null,
   }))
 
   const knockoutRows = KNOCKOUT_MATCHES.map(m => ({
@@ -33,8 +31,6 @@ export async function POST(request: NextRequest) {
     home_team_id: null,
     away_team_id: null,
     scheduled_at: m.kickoff_utc,
-    feeds_into_slot: null,
-    feeds_into_side: null,
   }))
 
   const { error } = await admin
