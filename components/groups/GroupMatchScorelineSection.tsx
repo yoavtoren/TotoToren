@@ -260,11 +260,10 @@ export default function GroupMatchScorelineSection({
                           ))}
                         </div>
 
-                        {/* Row 3: Σ total + exact score + winner label */}
-                        <div className="flex flex-col items-center gap-1.5 px-4 py-2.5">
-                          <div className="flex items-center justify-center gap-3">
+                        {/* Row 3: Σ total + exact score + winner label (all inline) */}
+                        <div className="flex items-center justify-center gap-3 px-4 py-2.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center justify-center w-5 h-5 bg-white/15 rounded-full text-xs shrink-0">⚽</span>
+                            <span className="text-lg shrink-0">⚽</span>
                             <input
                               ref={el => { if (el) inputRefs.current.set(`${match.match}-total`, el) }}
                               type="number" min="0" max="30"
@@ -331,7 +330,6 @@ export default function GroupMatchScorelineSection({
                               title="Clear score"
                             >✕</button>
                           )}
-                          </div>{/* end justify-center row */}
                           {(() => {
                             const h = s?.home !== '' ? Number(s?.home) : null
                             const a = s?.away !== '' ? Number(s?.away) : null
@@ -339,14 +337,14 @@ export default function GroupMatchScorelineSection({
                             const winner = h > a ? match.home : a > h ? match.away : null
                             return (
                               <span dir="rtl" className={cn(
-                                'text-[10px] font-semibold leading-tight text-center',
+                                'text-[10px] font-semibold leading-tight',
                                 winner ? 'text-emerald-300/80' : 'text-white/40',
                               )}>
                                 {winner ? `ניצחון ל${winner}` : 'תיקו'}
                               </span>
                             )
                           })()}
-                        </div>{/* end flex-col */}
+                        </div>
                       </div>
                       </div>
                     )
