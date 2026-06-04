@@ -321,14 +321,12 @@ function UserPredictionsModal({
                 if (!hasPast) return (
                   <p className="text-xs text-white/30 italic text-center py-6">המשחקים עוד לא התחילו</p>
                 )
-                return GROUP_LETTERS.map(g => {
-                  const past = (GROUP_MATCHES_BY_GROUP[g] ?? []).filter(m => played(m.match))
-                  if (past.length === 0) return null
-                  return (
-                    <div key={g}>
-                      <p className="text-[10px] text-white/40 uppercase font-mono mb-2">בית {g}</p>
-                      <div className="space-y-1">
-                        {past.map(m => {
+                const allPast = GROUP_LETTERS
+                  .flatMap(g => (GROUP_MATCHES_BY_GROUP[g] ?? []).filter(m => played(m.match)))
+                  .sort((a, b) => new Date(b.kickoff_utc).getTime() - new Date(a.kickoff_utc).getTime())
+                return [(
+                  <div key="all" className="space-y-1">
+                    {allPast.map(m => {
                           const pred = preds.groupMatches[m.match]
                           const raw = breakdown[String(m.match)] ?? (breakdown as any)[m.match] ?? null
                           const pts: number | null = raw == null ? null
@@ -366,11 +364,9 @@ function UserPredictionsModal({
                               </span>
                             </div>
                           )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })
+                    })}
+                  </div>
+                )]
               })()}
             </div>
           )}
