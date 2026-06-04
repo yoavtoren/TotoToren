@@ -16,7 +16,7 @@ const KO_DATE: Record<number, string> = Object.fromEntries(
 )
 
 // ─── Layout constants ──────────────────────────────────────────────────────────
-const CH     = 80             // card height (px) — increased to fit always-visible score row
+const CH     = 88             // card height (px) — teams + score row with label
 const CW     = 116            // card width (px)
 const CGAP   = 16             // horizontal gap between columns (connector space)
 const SGAP   = 40             // vertical gap between sibling cards in same round
@@ -128,17 +128,30 @@ function MatchCard({
         <div className="h-px bg-white/5 mx-1.5" />
         <TeamRow teamId={awayId} />
       </div>
-      {/* Score inputs — always visible */}
-      <div className="px-1.5 pb-1 flex items-center gap-1 pt-0.5 border-t border-white/5">
-        <input type="number" min="0" max="20" value={homeScore}
-          onChange={e => onScoreChange('home', e.target.value)} placeholder="–"
-          disabled={disabled}
-          className="glass-input text-center py-0.5 text-[11px] w-full" />
-        <span className="text-white/30 text-[10px] shrink-0">:</span>
-        <input type="number" min="0" max="20" value={awayScore}
-          onChange={e => onScoreChange('away', e.target.value)} placeholder="–"
-          disabled={disabled}
-          className="glass-input text-center py-0.5 text-[11px] w-full" />
+      {/* Score inputs */}
+      <div className="px-1.5 pb-1.5 pt-1 border-t border-white/10 space-y-0.5">
+        <p className="text-[8px] text-emerald-400/50 font-semibold text-center tracking-wide uppercase">תוצאה</p>
+        <div className="flex items-center gap-1">
+          <input type="number" min="0" max="20" value={homeScore}
+            onChange={e => onScoreChange('home', e.target.value)} placeholder="?"
+            disabled={disabled}
+            className={cn(
+              'w-full text-center py-0.5 text-[11px] font-mono rounded border outline-none bg-white/8 text-white/80',
+              homeScore
+                ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-200'
+                : 'border-white/20 hover:border-white/35 focus:border-emerald-400/50',
+            )} />
+          <span className="text-white/40 text-[10px] font-bold shrink-0">:</span>
+          <input type="number" min="0" max="20" value={awayScore}
+            onChange={e => onScoreChange('away', e.target.value)} placeholder="?"
+            disabled={disabled}
+            className={cn(
+              'w-full text-center py-0.5 text-[11px] font-mono rounded border outline-none bg-white/8 text-white/80',
+              awayScore
+                ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-200'
+                : 'border-white/20 hover:border-white/35 focus:border-emerald-400/50',
+            )} />
+        </div>
       </div>
     </div>
   )
