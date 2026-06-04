@@ -59,18 +59,18 @@ export default function ThirdPlacePicker({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-shadow">חלק 3 — 8 הקבוצות הטובות במקום השלישי</h2>
+        <h2 className="text-xl font-bold text-shadow">חלק 3 — 8 הנבחרות הטובות במקום השלישי</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          בחרו קבוצה ואז לחצו על המיקום המתאים לה. בחרו 8 מתוך 12 קבוצות שניחשתם שיעברו.
+          בחרו נבחרת ואז לחצו על המיקום המתאים לה. בחרו 8 מתוך 12 נבחרות שניחשתם שיעברו.
         </p>
       </div>
 
       {/* Rules box */}
       <GlassCard className="space-y-4 py-3">
-        <p className="font-semibold text-white/80 text-xs uppercase tracking-wider">איך עובדות 8 הקבוצות הטובות במקום שלישי?</p>
+        <p className="font-semibold text-white/80 text-xs uppercase tracking-wider">איך עובדות 8 הנבחרות הטובות במקום שלישי?</p>
         <div className="space-y-2">
           <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">שלב 1 — אילו 8 מתוך 12 עוברות?</p>
-          <p className="text-sm text-white/60">כל בית מייצר קבוצה אחת שסיימה במקום שלישי — 12 בסך הכל. הן מדורגות ביניהן לפי:</p>
+          <p className="text-sm text-white/60">כל בית מייצר נבחרת אחת שסיימה במקום שלישי — 12 בסך הכל. הן מדורגות ביניהן לפי:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-white/60">
             {[['1','נקודות בשלב הבתים'],['2','הפרש שערים'],['3','שערים שבוקעו'],['4','ציון הגינות (כרטיסים)'],['5','דירוג FIFA']].map(([n, rule]) => (
               <div key={n} className="flex items-center gap-2 glass rounded-lg px-3 py-1.5">
@@ -84,7 +84,7 @@ export default function ThirdPlacePicker({
           <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">שלב 2 — לאיזה מיקום? (לא הגרלה!)</p>
           <p className="text-sm text-white/60">
             המיקום <strong className="text-white">לא נקבע בהגרלה</strong> — FIFA קבעה מראש טבלה קבועה:
-            בהתאם ל<strong className="text-white">אילו 8 בתים</strong> שלחו קבוצה, כל בית מקבל מיקום ספציפי.
+            בהתאם ל<strong className="text-white">אילו 8 בתים</strong> שלחו נבחרת, כל בית מקבל מיקום ספציפי.
           </p>
           <p className="text-sm text-white/60">
             לדוגמה: אם בית C יעבור, הוא עשוי להגיע ל-M75, M78 או M79 — תלוי אילו 7 בתים אחרים גם עברו.
@@ -139,7 +139,7 @@ export default function ThirdPlacePicker({
       <GlassCard className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white/70">
-            שלב 1 — בחר קבוצה ({assignedIds.size}/8 הוצבו)
+            שלב 1 — בחר נבחרת ({assignedIds.size}/8 הוצבו)
           </h3>
           {selectedGroup && (
             <button

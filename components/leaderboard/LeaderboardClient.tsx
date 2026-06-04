@@ -181,7 +181,7 @@ function UserPredictionsModal({
                   const matches = GROUP_MATCHES_BY_GROUP[g] ?? []
                   return (
                     <div key={g}>
-                      <p className="text-[10px] text-white/40 uppercase font-mono mb-2 tracking-wider">קבוצה {g}</p>
+                      <p className="text-[10px] text-white/40 uppercase font-mono mb-2 tracking-wider">בית {g}</p>
                       <div className="space-y-1">
                         {matches.map(m => {
                           const pred = preds.groupMatches[m.match]
@@ -313,7 +313,7 @@ function UserPredictionsModal({
                   if (past.length === 0) return null
                   return (
                     <div key={g}>
-                      <p className="text-[10px] text-white/40 uppercase font-mono mb-2">קבוצה {g}</p>
+                      <p className="text-[10px] text-white/40 uppercase font-mono mb-2">בית {g}</p>
                       <div className="space-y-1">
                         {past.map(m => {
                           const pred = preds.groupMatches[m.match]

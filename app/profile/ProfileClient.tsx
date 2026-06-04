@@ -489,7 +489,7 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
           <div className="px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-white/40 mb-0.5">קבוצה אהובה</p>
+                <p className="text-xs text-white/40 mb-0.5">נבחרת אהובה</p>
                 {favTeam ? (
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{getFlagEmoji(favTeam.flag_code)}</span>
@@ -506,7 +506,7 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
             </div>
             {teamPickerOpen && (
               <div className="mt-3 space-y-2">
-                <input autoFocus placeholder="חפש קבוצה…" value={teamSearch}
+                <input autoFocus placeholder="חפש נבחרת…" value={teamSearch}
                   onChange={e => setTeamSearch(e.target.value)}
                   className="glass-input py-2 px-3 text-sm w-full" />
                 <div className="grid grid-cols-2 gap-1 max-h-52 overflow-y-auto no-scrollbar">
@@ -527,7 +527,7 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
                 {profile.favorite_team_id && (
                   <button onClick={() => { patchProfile({ favorite_team_id: null }); setTeamPickerOpen(false) }}
                     className="text-xs text-white/30 hover:text-red-400 transition-colors">
-                    הסר קבוצה
+                    הסר נבחרת
                   </button>
                 )}
               </div>

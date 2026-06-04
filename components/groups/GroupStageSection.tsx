@@ -16,7 +16,7 @@ export default function GroupStageSection({ groupOrder, onReorder, disabled }: G
       <div>
         <h2 className="text-xl font-bold text-shadow">חלק 2 — דירוג הבתים</h2>
         <p className="text-sm text-white/50 mt-0.5">
-          גררו את 4 הקבוצות בכל בית לפי הסדר שאתם מנחשים (1 → 4).
+          סדרו את 4 הנבחרות בכל בית לפי הסדר שאתם מנחשים (1 → 4).
         </p>
       </div>
 

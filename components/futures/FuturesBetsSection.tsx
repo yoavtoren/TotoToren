@@ -43,7 +43,7 @@ function TeamPicker({ label, hint, points, value, onChange, disabled }: TeamPick
             value ? 'text-white' : 'text-white/60'
           )}
         >
-          <option value="">— בחרו קבוצה —</option>
+          <option value="">— בחרו נבחרת —</option>
           {['A','B','C','D','E','F','G','H','I','J','K','L'].map((g) => (
             <optgroup key={g} label={`Group ${g}`}>
               {TEAMS.filter((t) => t.group_letter === g).map((t) => (
@@ -88,8 +88,8 @@ export default function FuturesBetsSection({ futures, onSet, disabled }: Futures
 
       <GlassCard className="space-y-6">
         <TeamPicker
-          label="אלוף גביע העולם"
-          hint="איזו קבוצה תרים את הגביע ב-19 ביולי?"
+          label="הנבחרת הזוכה"
+          hint="איזו נבחרת תרים את הגביע ב-19 ביולי?"
           points={15}
           value={futures.champion_team_id}
           onChange={(id) => onSet('champion_team_id', id)}
@@ -99,8 +99,8 @@ export default function FuturesBetsSection({ futures, onSet, disabled }: Futures
         <div className="h-px bg-white/10" />
 
         <TeamPicker
-          label="הקבוצה הכי שערנית"
-          hint="איזו קבוצה תבקיע הכי הרבה שערים בטורניר?"
+          label="הנבחרת הכי שערנית"
+          hint="איזו נבחרת תבקיע הכי הרבה שערים בטורניר?"
           points={8}
           value={futures.top_scorer_team_id}
           onChange={(id) => onSet('top_scorer_team_id', id)}
@@ -110,8 +110,8 @@ export default function FuturesBetsSection({ futures, onSet, disabled }: Futures
         <div className="h-px bg-white/10" />
 
         <TeamPicker
-          label="קבוצת מלך השערים (עקב הזהב)"
-          hint="הקבוצה שבה משחק הכדורגלן עם הכי הרבה שערים בטורניר"
+          label="נעל הזהב (הנבחרת שממנה הכובש הגיע)"
+          hint="הנבחרת שבה משחק הכדורגלן עם הכי הרבה שערים בטורניר"
           points={8}
           value={futures.golden_boot_team_id}
           onChange={(id) => onSet('golden_boot_team_id', id)}
@@ -121,7 +121,7 @@ export default function FuturesBetsSection({ futures, onSet, disabled }: Futures
         <div className="h-px bg-white/10" />
 
         <TeamPicker
-          label="הקבוצה שתספוג הכי הרבה שערים"
+          label="הנבחרת שספגה הכי הרבה שערים"
           hint="מי תהיה הרשת הכי דלוחה של הטורניר?"
           points={10}
           value={futures.most_conceded_team_id}

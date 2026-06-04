@@ -213,7 +213,7 @@ export default function AdminClient({
       body: JSON.stringify({ team_ids: ids }),
     })
     setSavingQualifiers(false)
-    if (res.ok) showToast('קבוצות מקום שלישי נשמרו ✓')
+    if (res.ok) showToast('נבחרות מקום שלישי נשמרו ✓')
     else showToast((await res.json()).error, false)
   }
 
@@ -355,10 +355,10 @@ export default function AdminClient({
           return (
             <section style={{ marginTop: 24 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
-                קבוצות שעלו בכל שלב
+                נבחרות שעלו בכל שלב
               </h2>
               <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
-                מחושב אוטומטית מתוצאות המשחקים. ניקוד לכל קבוצה שניחשת נכון.
+                מחושב אוטומטית מתוצאות המשחקים. ניקוד לכל נבחרת שניחשת נכון.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {tiers.map(({ stage, label, pts }) => {
@@ -377,7 +377,7 @@ export default function AdminClient({
                           </span>
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#3182ce', background: '#ebf8ff', padding: '3px 10px', borderRadius: 20 }}>
-                          +{pts} נק׳ לכל קבוצה נכונה
+                          +{pts} נק׳ לכל נבחרת נכונה
                         </span>
                       </div>
                       {done > 0 && (
@@ -466,10 +466,10 @@ export default function AdminClient({
         {/* 3rd Place Qualifiers */}
         <section style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 1 }}>
-            קבוצות מקום שלישי שעלו לסבב 32
+            נבחרות מקום שלישי שעלו לסבב 32
           </h2>
           <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
-            בחר את 8 הקבוצות שסיימו 3רד ועלו לסבב 32 ({thirdQualifiers.size}/8 נבחרו).
+            בחר את 8 הנבחרות שסיימו 3רד ועלו לסבב 32 ({thirdQualifiers.size}/8 נבחרו).
           </p>
           <div style={{ background: '#fff', borderRadius: 10, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8, marginBottom: 14 }}>
@@ -523,10 +523,10 @@ export default function AdminClient({
               הזן לאחר סיום הטורניר. שמירה תפעיל מחדש חישוב ניקוד.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-              {teamSelect('champion_team_id', '🏆 אלוף גביע העולם')}
-              {teamSelect('top_scorer_team_id', '⚽ קבוצה הכי שערנית')}
-              {teamSelect('golden_boot_team_id', '👟 עקב זהב (קבוצת הבוקע)')}
-              {teamSelect('most_conceded_team_id', '🥅 הכי הרבה ספיגות')}
+              {teamSelect('champion_team_id', '🏆 הנבחרת הזוכה')}
+              {teamSelect('top_scorer_team_id', '⚽ הנבחרת שהבקיעה הכי הרבה')}
+              {teamSelect('golden_boot_team_id', '👟 נעל הזהב (הנבחרת שממנה הכובש הגיע)')}
+              {teamSelect('most_conceded_team_id', '🥅 הנבחרת שספגה הכי הרבה')}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#4a5568' }}>📊 סה״כ שערים בטורניר</label>
                 <input
