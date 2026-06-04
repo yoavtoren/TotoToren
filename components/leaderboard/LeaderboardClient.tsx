@@ -108,12 +108,14 @@ function UserPredictionsModal({
   preds,
   loading,
   onClose,
+  completedMatchIds = new Set(),
 }: {
   profile: Profile | null
   entry: ScoreEntry | null
   preds: UserPreds | null
   loading: boolean
   onClose: () => void
+  completedMatchIds?: Set<number>
 }) {
   const [modalTab, setModalTab] = useState<'predictions' | 'scoring'>('predictions')
   const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
@@ -308,21 +310,19 @@ function UserPredictionsModal({
             <div className="space-y-4 pt-1">
               <p className="text-xs text-white/40">ניקוד למשחקים שהסתיימו</p>
               {(() => {
-                // Show matches that have either kicked off OR already have an admin-entered result
-                const hasResult = (matchId: number) =>
-                  breakdown[String(matchId)] != null || (breakdown as any)[matchId] != null
+                // Show matches where admin entered a result OR match already kicked off by date
+                const played = (matchId: number) =>
+                  completedMatchIds.has(matchId) || new Date(
+                    [...Object.values(GROUP_MATCHES_BY_GROUP)].flat().find(m => m.match === matchId)?.kickoff_utc ?? 0
+                  ).getTime() < Date.now()
                 const hasPast = GROUP_LETTERS.some(g =>
-                  (GROUP_MATCHES_BY_GROUP[g] ?? []).some(m =>
-                    new Date(m.kickoff_utc).getTime() < Date.now() || hasResult(m.match)
-                  )
+                  (GROUP_MATCHES_BY_GROUP[g] ?? []).some(m => played(m.match))
                 )
                 if (!hasPast) return (
                   <p className="text-xs text-white/30 italic text-center py-6">המשחקים עוד לא התחילו</p>
                 )
                 return GROUP_LETTERS.map(g => {
-                  const past = (GROUP_MATCHES_BY_GROUP[g] ?? []).filter(m =>
-                    new Date(m.kickoff_utc).getTime() < Date.now() || hasResult(m.match)
-                  )
+                  const past = (GROUP_MATCHES_BY_GROUP[g] ?? []).filter(m => played(m.match))
                   if (past.length === 0) return null
                   return (
                     <div key={g}>
@@ -849,10 +849,12 @@ export default function LeaderboardClient({
   initialScores,
   allProfiles,
   initialFutures,
+  completedMatchIds = new Set(),
 }: {
   initialScores: ScoreEntry[]
   allProfiles: Profile[]
   initialFutures: FuturePred[]
+  completedMatchIds?: Set<number>
 }) {
   const [scores, setScores] = useState(initialScores)
   const [profiles, setProfiles] = useState(allProfiles)
@@ -1039,6 +1041,7 @@ export default function LeaderboardClient({
         preds={modalPreds}
         loading={modalLoading}
         onClose={() => { setModalUserId(null); setModalPreds(null) }}
+        completedMatchIds={completedMatchIds}
       />
     )}
   </>
