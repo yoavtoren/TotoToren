@@ -39,7 +39,18 @@ export function resolveMatchTeam(
     return thirdPlace[matchNum] ?? null
   }
   if ('feeder_match' in source) {
-    return bracketWinners[source.feeder_match] ?? null
+    const feederMatchNum = source.feeder_match
+    const winner = bracketWinners[feederMatchNum] ?? null
+
+    // Match 103 is the 3rd-place game: it features the LOSERS of the two semi-finals
+    if (matchNum === 103) {
+      if (winner === null) return null
+      const sfHome = resolveMatchTeam(feederMatchNum, 'home', groupOrder, thirdPlace, bracketWinners)
+      const sfAway = resolveMatchTeam(feederMatchNum, 'away', groupOrder, thirdPlace, bracketWinners)
+      return winner === sfHome ? sfAway : sfHome
+    }
+
+    return winner
   }
   return null
 }
