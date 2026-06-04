@@ -19,7 +19,7 @@ const KO_DATE: Record<number, string> = Object.fromEntries(
 const CH     = 80             // card height (px) — increased to fit always-visible score row
 const CW     = 116            // card width (px)
 const CGAP   = 16             // horizontal gap between columns (connector space)
-const SGAP   = 24             // vertical gap between sibling cards in same round
+const SGAP   = 40             // vertical gap between sibling cards in same round
 
 const SLOT     = CH + SGAP        // = 104  one vertical slot
 const HALF_W   = 4 * (CW + CGAP) // = 528  width of each bracket half
