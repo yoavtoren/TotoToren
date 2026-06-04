@@ -54,7 +54,7 @@ export default function HomePage() {
             alt="טוטו-תורן"
             width={200}
             height={200}
-            className="mx-auto w-32 sm:w-40 lg:w-52 h-auto object-contain drop-shadow-2xl"
+            className="mx-auto w-24 sm:w-28 lg:w-36 h-auto object-contain drop-shadow-2xl"
             priority
           />
           <p className="text-lg sm:text-xl text-white/65 max-w-xl mx-auto leading-relaxed">
