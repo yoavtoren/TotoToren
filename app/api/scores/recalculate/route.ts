@@ -58,7 +58,11 @@ export async function POST(request: NextRequest) {
     if (order[1]) r32Teams.add(order[1])
   }
   for (const r of (thirdRows ?? []) as any[]) r32Teams.add(r.team_id)
-  const realR32Teams = r32Teams.size > 0 ? r32Teams : new Set(Object.values(knockoutWinnerIds))
+
+  // ADV_R32 only fires when the admin has officially closed the group stage
+  // by saving all 8 third-place qualifiers — until then scores are 0 for advancement
+  const groupStageComplete = (thirdRows ?? []).length === 8
+  const realR32Teams = groupStageComplete ? r32Teams : new Set<number>()
   const stageQual: Record<string, Set<number>> = { r16: new Set(), qf: new Set(), sf: new Set(), final: new Set() }
   for (const r of (stageRows ?? []) as any[]) { if (stageQual[r.stage]) stageQual[r.stage].add(r.team_id) }
 
