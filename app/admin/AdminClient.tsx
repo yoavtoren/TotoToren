@@ -12,10 +12,11 @@ const ROUND_LABELS: Record<string, string> = {
 const KNOCKOUT_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'third_place', 'final'] as const
 
 export default function AdminClient({
-  groupMatches, knockoutMatches,
+  groupMatches, knockoutMatches, adminToken,
 }: {
   groupMatches: Match[]
   knockoutMatches: Match[]
+  adminToken: string
 }) {
   const total = groupMatches.length + knockoutMatches.length
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>({})
@@ -36,9 +37,11 @@ export default function AdminClient({
     window.location.href = '/admin/login'
   }
 
+  const authHeaders = { 'x-admin-token': adminToken }
+
   async function handleSync() {
     setSyncing(true)
-    const res = await fetch('/api/admin/sync-schedule', { method: 'POST' })
+    const res = await fetch('/api/admin/sync-schedule', { method: 'POST', headers: authHeaders })
     const data = await res.json()
     setSyncing(false)
     if (res.ok) { showToast(data.message); window.location.reload() }
@@ -52,7 +55,7 @@ export default function AdminClient({
 
     const saveRes = await fetch('/api/admin/save-result', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify({ matchId, homeScore: parseInt(s.home), awayScore: parseInt(s.away) }),
     })
     if (!saveRes.ok) {

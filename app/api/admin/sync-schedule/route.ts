@@ -5,8 +5,8 @@ import { GROUP_MATCHES, KNOCKOUT_MATCHES } from '@/data/match-schedule'
 import { getTeamIdByName } from '@/data/teams'
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get(ADMIN_COOKIE)?.value
   const expected = await computeAdminToken()
+  const token = request.headers.get('x-admin-token') ?? request.cookies.get(ADMIN_COOKIE)?.value
   if (!token || token !== expected) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

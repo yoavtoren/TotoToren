@@ -24,6 +24,7 @@ export default async function AdminPage() {
     <AdminClient
       groupMatches={groupMatches ?? []}
       knockoutMatches={knockoutMatches ?? []}
+      adminToken={expectedToken}
     />
   )
 }

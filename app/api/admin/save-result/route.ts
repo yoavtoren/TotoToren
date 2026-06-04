@@ -3,8 +3,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { computeAdminToken, ADMIN_COOKIE } from '@/lib/admin-auth'
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get(ADMIN_COOKIE)?.value
   const expected = await computeAdminToken()
+  const token = request.headers.get('x-admin-token') ?? request.cookies.get(ADMIN_COOKIE)?.value
   if (!token || token !== expected) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
