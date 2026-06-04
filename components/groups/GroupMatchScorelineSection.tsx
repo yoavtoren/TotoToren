@@ -205,7 +205,7 @@ export default function GroupMatchScorelineSection({
                             const winner = h > a ? match.home : a > h ? match.away : null
                             return (
                               <span dir="rtl" className={cn(
-                                'text-[10px] font-semibold shrink-0 max-w-[72px] truncate leading-tight text-center',
+                                'text-[9px] font-semibold flex-1 min-w-0 leading-tight text-center break-words',
                                 winner ? 'text-emerald-300/80' : 'text-white/40',
                               )}>
                                 {winner ? `ניצחון ל${winner}` : 'תיקו'}
