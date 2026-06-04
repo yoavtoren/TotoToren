@@ -2,9 +2,20 @@
 
 import { useState } from 'react'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
+import { GROUP_LETTERS } from '@/lib/constants'
 import { getThirdFromMatchNums, getThirdFromGroups } from '@/lib/bracket'
 import GlassCard from '@/components/ui/GlassCard'
 import { cn } from '@/lib/utils'
+
+const THIRD_MATCH_NUMS = getThirdFromMatchNums()
+
+// Build per-group eligible slots from the third_from data
+const GROUP_ELIGIBLE_SLOTS: Record<string, number[]> = {}
+for (const g of GROUP_LETTERS) {
+  GROUP_ELIGIBLE_SLOTS[g] = THIRD_MATCH_NUMS.filter(m =>
+    (getThirdFromGroups(m, 'home') ?? getThirdFromGroups(m, 'away') ?? []).includes(g)
+  )
+}
 
 interface ThirdPlacePickerProps {
   available3rdPlaceTeams: Record<string, number | null>
@@ -13,8 +24,6 @@ interface ThirdPlacePickerProps {
   onAssign: (r32MatchNum: number, teamId: number | null) => void
   disabled?: boolean
 }
-
-const THIRD_FROM_MATCHES = getThirdFromMatchNums()
 
 export default function ThirdPlacePicker({
   available3rdPlaceTeams, assigned, assignedIds, onAssign, disabled,
@@ -84,6 +93,45 @@ export default function ThirdPlacePicker({
           <p className="text-sm text-amber-300/80 font-medium">
             ↳ בניחוש: בחר את 8 הבתים שניחשת שיעברו, ולפי הטבלה של FIFA — הצב כל אחד במיקום הנכון.
           </p>
+        </div>
+
+        {/* Per-group eligible slots reference */}
+        <div className="space-y-2 border-t border-white/10 pt-3">
+          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">טבלת עזר — לאיזה משבצות יכול כל בית להגיע?</p>
+          <p className="text-xs text-white/40">בהתאם לאיזה 8 בתים עוברים, כל בית יכול להגיע רק למשבצות הבאות:</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {GROUP_LETTERS.map(g => {
+              const slots = GROUP_ELIGIBLE_SLOTS[g]
+              const forced = slots.length === 1
+              return (
+                <div key={g} className={cn(
+                  'rounded-lg px-2.5 py-2 text-xs',
+                  forced ? 'bg-amber-500/15 border border-amber-400/30' : 'bg-white/5 border border-white/8'
+                )}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className={cn(
+                      'font-bold font-mono px-1 py-0.5 rounded text-[10px]',
+                      forced ? 'bg-amber-400/20 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'
+                    )}>בית {g}</span>
+                    {forced && <span className="text-amber-400/70 text-[9px] font-semibold">קבוע!</span>}
+                  </div>
+                  {slots.length === 0 ? (
+                    <span className="text-white/20 text-[10px]">לא זכאי</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {slots.map(m => (
+                        <span key={m} className={cn(
+                          'font-mono text-[10px] px-1.5 py-0.5 rounded font-semibold',
+                          forced ? 'bg-amber-400/20 text-amber-200' : 'bg-white/8 text-white/50'
+                        )}>M{m}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-[11px] text-white/30">המשבצת המדויקת בתוך האפשריות נקבעת לפי שילוב הבתים שעברו.</p>
         </div>
       </GlassCard>
 
@@ -158,7 +206,7 @@ export default function ThirdPlacePicker({
           )}
         </h3>
 
-        {THIRD_FROM_MATCHES.map((matchNum) => {
+        {THIRD_MATCH_NUMS.map((matchNum) => {
           const eligibleGroups =
             getThirdFromGroups(matchNum, 'away') ?? getThirdFromGroups(matchNum, 'home') ?? []
           const assignedTeamId = assigned[matchNum] ?? null
