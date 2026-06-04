@@ -12,13 +12,15 @@ const ROUND_LABELS: Record<string, string> = {
 const KNOCKOUT_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'third_place', 'final'] as const
 
 export default function AdminClient({
-  groupMatches, knockoutMatches, adminToken, actualStandings: initialStandings, thirdQualifiers: initialQualifiers,
+  groupMatches, knockoutMatches, adminToken, actualStandings: initialStandings,
+  thirdQualifiers: initialQualifiers, stageQualifiers: initialStageQualifiers,
 }: {
   groupMatches: Match[]
   knockoutMatches: Match[]
   adminToken: string
   actualStandings: Record<string, number[]>
   thirdQualifiers: number[]
+  stageQualifiers: Record<string, number[]>
 }) {
   const total = groupMatches.length + knockoutMatches.length
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>({})
@@ -38,6 +40,15 @@ export default function AdminClient({
   const [savingStanding, setSavingStanding] = useState<string | null>(null)
   const [thirdQualifiers, setThirdQualifiers] = useState<Set<number>>(new Set(initialQualifiers))
   const [savingQualifiers, setSavingQualifiers] = useState(false)
+  // Cascading knockout stages: r16 → qf → sf → final → champion
+  const [stageTeams, setStageTeams] = useState<Record<string, Set<number>>>({
+    r16:     new Set(initialStageQualifiers.r16     ?? []),
+    qf:      new Set(initialStageQualifiers.qf      ?? []),
+    sf:      new Set(initialStageQualifiers.sf      ?? []),
+    final:   new Set(initialStageQualifiers.final   ?? []),
+    champion:new Set(initialStageQualifiers.champion ?? []),
+  })
+  const [savingStage, setSavingStage] = useState<string | null>(null)
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok })
@@ -76,7 +87,7 @@ export default function AdminClient({
       return
     }
 
-    const calcRes = await fetch('/api/scores/recalculate', { method: 'POST' })
+    const calcRes = await fetch('/api/scores/recalculate', { method: 'POST', headers: authHeaders })
     const calcData = await calcRes.json()
     setSavedIds(prev => new Set([...prev, matchId]))
     setSaving(null)
@@ -244,6 +255,34 @@ export default function AdminClient({
     setSavingQualifiers(false)
     if (res.ok) showToast('נבחרות מקום שלישי נשמרו ✓')
     else showToast((await res.json()).error, false)
+  }
+
+  async function handleSaveStage(stage: string, ids: Set<number>) {
+    setSavingStage(stage)
+    const res = await fetch('/api/admin/save-stage-qualifiers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ stage, team_ids: [...ids] }),
+    })
+    setSavingStage(null)
+    if (res.ok) showToast(`שמור ✓`)
+    else showToast((await res.json()).error, false)
+  }
+
+  function toggleStageTeam(stage: string, teamId: number, nextStages: string[]) {
+    setStageTeams(prev => {
+      const next = { ...prev, [stage]: new Set(prev[stage]) }
+      if (next[stage].has(teamId)) {
+        next[stage].delete(teamId)
+        // Cascade: remove from all later stages too
+        for (const s of nextStages) {
+          next[s] = new Set([...prev[s]].filter(id => id !== teamId))
+        }
+      } else {
+        next[stage].add(teamId)
+      }
+      return next
+    })
   }
 
   const POSITION_LABELS = ['🥇 מקום 1', '🥈 מקום 2', '🥉 מקום 3', '4️⃣ מקום 4']
@@ -554,7 +593,106 @@ export default function AdminClient({
           </div>
         </section>
 
-        {/* Knockout Advancement — after 3rd place qualifiers */}
+        {/* Cascading Knockout Bracket Selector */}
+        {(() => {
+          const r32: number[] = []
+          for (const g of GROUP_LETTERS) {
+            const s = standings[g] ?? []
+            if (s[0]) r32.push(s[0])
+            if (s[1]) r32.push(s[1])
+          }
+          for (const id of thirdQualifiers) r32.push(id)
+          if (r32.length === 0) return null
+          const stages: { key: string; label: string; max: number; pts: number; pool: number[] }[] = [
+            { key: 'r16',      label: 'שמינית גמר — 16 נבחרות',  max: 16, pts: 5,  pool: r32 },
+            { key: 'qf',       label: 'רבע גמר — 8 נבחרות',       max: 8,  pts: 6,  pool: [...stageTeams.r16] },
+            { key: 'sf',       label: 'חצי גמר — 4 נבחרות',       max: 4,  pts: 7,  pool: [...stageTeams.qf] },
+            { key: 'final',    label: 'גמר — 2 נבחרות',            max: 2,  pts: 8,  pool: [...stageTeams.sf] },
+            { key: 'champion', label: '🏆 אלוף',                   max: 1,  pts: 15, pool: [...stageTeams.final] },
+          ]
+          const nextStagesOf: Record<string, string[]> = {
+            r16: ['qf','sf','final','champion'], qf: ['sf','final','champion'],
+            sf: ['final','champion'], final: ['champion'], champion: [],
+          }
+          return (
+            <section style={{ marginTop: 24 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
+                שלבי הנוקאאוט — בחירת נבחרות
+              </h2>
+              <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+                בחר נבחרות שעברו בכל שלב. כל שלב נגזר מהשלב הקודם. לחץ 💾 כדי לשמור ולעדכן ניקוד.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {stages.map(({ key, label, max, pts, pool }) => {
+                  const selected = stageTeams[key]
+                  const done = selected.size
+                  return (
+                    <div key={key} style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: done === max ? '#c6f6d5' : '#e2e8f0', color: done === max ? '#276749' : '#718096' }}>
+                            {done}/{max}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: '#3182ce', background: '#ebf8ff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                            +{pts} נק׳ לנבחרת
+                          </span>
+                          <button
+                            onClick={async () => {
+                              await handleSaveStage(key, selected)
+                              const calcRes = await fetch('/api/scores/recalculate', { method: 'POST', headers: authHeaders })
+                              const d = await calcRes.json()
+                              showToast(`נשמר ✓ ${d.message ?? ''}`)
+                            }}
+                            disabled={savingStage === key}
+                            style={{ padding: '5px 14px', borderRadius: 7, border: 'none', background: done > 0 ? '#276749' : '#a0aec0', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                          >
+                            {savingStage === key ? '…' : '💾 שמור + עדכן ניקוד'}
+                          </button>
+                        </div>
+                      </div>
+                      {pool.length === 0 ? (
+                        <p style={{ fontSize: 12, color: '#a0aec0', margin: 0 }}>— בחר נבחרות בשלב הקודם תחילה —</p>
+                      ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+                          {pool.map(id => {
+                            const t = getTeamById(id)
+                            if (!t) return null
+                            const checked = selected.has(id)
+                            const isDisabled = !checked && done >= max
+                            return (
+                              <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, border: `1px solid ${checked ? '#68d391' : '#e2e8f0'}`, background: checked ? '#f0fff4' : isDisabled ? '#fafafa' : '#fff', cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.4 : 1 }}>
+                                <input
+                                  type={max === 1 ? 'radio' : 'checkbox'}
+                                  name={max === 1 ? `stage-${key}` : undefined}
+                                  checked={checked}
+                                  disabled={isDisabled}
+                                  onChange={() => {
+                                    if (max === 1) {
+                                      setStageTeams(prev => ({ ...prev, [key]: new Set([id]) }))
+                                    } else {
+                                      toggleStageTeam(key, id, nextStagesOf[key])
+                                    }
+                                  }}
+                                />
+                                <span style={{ fontSize: 18 }}>{getFlagEmoji(t.flag_code)}</span>
+                                <span style={{ fontSize: 12, fontWeight: checked ? 700 : 400 }}>{t.name}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )
+        })()}
+
+        {/* Knockout Advancement display (auto from match scores) */}
         {knockoutMatches.length > 0 && (() => {
           const winnerOf = (m: Match) =>
             m.home_score !== null && m.away_score !== null && m.home_team_id && m.away_team_id

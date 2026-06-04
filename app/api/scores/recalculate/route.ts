@@ -2,10 +2,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { computeAdminToken, ADMIN_COOKIE } from '@/lib/admin-auth'
 import {
-  scoreGroupMatch, scoreGroupStandings, scoreKnockoutMatch,
+  scoreGroupStandings, scoreKnockoutMatch,
   scoreFutures, scoreAdvancement,
   type FuturesPredictionInput, type FuturesResult,
 } from '@/lib/scoring'
+import { SCORING } from '@/lib/scoring.config'
 
 export async function POST(request: NextRequest) {
   const expected = await computeAdminToken()
@@ -96,16 +97,24 @@ export async function POST(request: NextRequest) {
   const scoreRows = profiles.map((p: { id: string }) => {
     const uid = p.id
 
-    // 6.1 Group match scoring — missing predictions default to 0:0 (tie, no goals)
+    // 6.1 Group match scoring — each field (1X2, Σ, exact) is fully independent
     let groupMatchPts = 0
     const userGMPreds = (allGroupMatchPreds as any[]).filter((r: any) => r.user_id === uid)
     for (const [matchIdStr, real] of Object.entries(groupMatchResults)) {
       const matchId = parseInt(matchIdStr)
       const pred = userGMPreds.find((r: any) => r.match_id === matchId)
-      const scorePred = pred
-        ? { home: pred.predicted_home, away: pred.predicted_away }
-        : { home: 0, away: 0 }
-      groupMatchPts += scoreGroupMatch(scorePred, real)
+      if (!pred) continue
+      const realOutcome = real.home > real.away ? '1' : real.away > real.home ? '2' : 'X'
+      // +1: predicted_outcome matches
+      if (pred.predicted_outcome !== null && pred.predicted_outcome === realOutcome)
+        groupMatchPts += SCORING.GROUP_MATCH_OUTCOME
+      // +2: predicted_total_goals matches
+      if (pred.predicted_total_goals !== null && pred.predicted_total_goals === real.home + real.away)
+        groupMatchPts += SCORING.GROUP_MATCH_TOTAL_GOALS
+      // +3: exact score matches
+      if (pred.predicted_home !== null && pred.predicted_away !== null &&
+          pred.predicted_home === real.home && pred.predicted_away === real.away)
+        groupMatchPts += SCORING.GROUP_MATCH_EXACT
     }
 
     // 6.2 Group standings
@@ -159,14 +168,18 @@ export async function POST(request: NextRequest) {
       realWinnersByStage.final, 'ADV_FINAL'
     )
 
-    // 6.4 Knockout scorelines
+    // 6.4 Knockout scorelines — independent: total goals and exact score
     let koScorePts = 0
-    for (const pred of userKPreds) {
-      if (pred.predicted_home_score === null || pred.predicted_away_score === null) continue
+    for (const pred of userKPreds as any[]) {
       const real = knockoutMatchResults[pred.match_num]
-      if (real) koScorePts += scoreKnockoutMatch(
-        { home: pred.predicted_home_score, away: pred.predicted_away_score }, real
-      )
+      if (!real) continue
+      // +2: predicted_total_goals matches
+      if (pred.predicted_total_goals !== null && pred.predicted_total_goals === real.home + real.away)
+        koScorePts += SCORING.KO_TOTAL_GOALS
+      // +3: exact score matches
+      if (pred.predicted_home_score !== null && pred.predicted_away_score !== null &&
+          pred.predicted_home_score === real.home && pred.predicted_away_score === real.away)
+        koScorePts += SCORING.KO_EXACT
     }
 
     // 6.5 Futures
