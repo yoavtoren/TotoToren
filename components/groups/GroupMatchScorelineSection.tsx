@@ -156,7 +156,7 @@ export default function GroupMatchScorelineSection({
                           ))}
                         </div>
 
-                        {/* Row 3: Σ total + exact score */}
+                        {/* Row 3: Σ total + exact score + winner label */}
                         <div className="flex items-center justify-center gap-3 px-3 py-2">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[9px] text-amber-400/60 font-bold">Σ</span>
@@ -198,6 +198,20 @@ export default function GroupMatchScorelineSection({
                               )}
                             />
                           </div>
+                          {(() => {
+                            const h = s?.home !== '' ? Number(s?.home) : null
+                            const a = s?.away !== '' ? Number(s?.away) : null
+                            if (h === null || a === null || s?.home === '' || s?.away === '') return null
+                            const winner = h > a ? match.home : a > h ? match.away : null
+                            return (
+                              <span dir="rtl" className={cn(
+                                'text-[10px] font-semibold shrink-0 max-w-[72px] truncate leading-tight text-center',
+                                winner ? 'text-emerald-300/80' : 'text-white/40',
+                              )}>
+                                {winner ? `ניצחון ל${winner}` : 'תיקו'}
+                              </span>
+                            )
+                          })()}
                           {hasValues && !disabled && (
                             <button
                               onClick={() => {
@@ -206,7 +220,7 @@ export default function GroupMatchScorelineSection({
                                 onScoreChange(match.match, 'away', '')
                                 onScoreChange(match.match, 'total', '')
                               }}
-                              className="text-white/20 active:text-red-400 text-xs transition-colors shrink-0 ml-1"
+                              className="text-white/20 active:text-red-400 text-xs transition-colors shrink-0"
                             >✕</button>
                           )}
                         </div>
