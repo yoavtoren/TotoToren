@@ -50,7 +50,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="טוטו-תורן" width={40} height={40} className="w-10 h-10 object-contain" />
+            <Image src="/logo.png" alt="טוטו-תורן" width={28} height={28} className="w-7 h-7 object-contain" />
           </Link>
 
           {/* Desktop links */}
