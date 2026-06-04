@@ -210,13 +210,12 @@ export default function PredictClient({
         updated_at: new Date().toISOString(),
       }
 
-      // group_predictions and third_place_selections both have UNIQUE(user_id,team_id)
-      // which conflicts when teams are reordered — delete-then-insert avoids this.
+      // Delete-then-insert for tables with UNIQUE(user_id, *) that can't be upserted
+      // (group_predictions has UNIQUE(user_id,team_id) — reordering breaks upsert)
+      // Always delete third_place_selections so removed slots are cleaned up.
       await Promise.all([
         supabase.from('group_predictions').delete().eq('user_id', userId),
-        thirdRows.length > 0
-          ? supabase.from('third_place_selections').delete().eq('user_id', userId)
-          : Promise.resolve(),
+        supabase.from('third_place_selections').delete().eq('user_id', userId),
       ])
 
       const [gRes, mRes, tRes, kRes, fRes] = await Promise.all([
@@ -228,7 +227,8 @@ export default function PredictClient({
               .upsert(matchRows, { onConflict: 'user_id,match_id' })
           : { error: null },
         thirdRows.length > 0
-          ? supabase.from('third_place_selections').insert(thirdRows)
+          ? supabase.from('third_place_selections')
+              .upsert(thirdRows, { onConflict: 'user_id,r32_match_num' })
           : { error: null },
         knockoutRows.length > 0
           ? supabase.from('knockout_predictions')
