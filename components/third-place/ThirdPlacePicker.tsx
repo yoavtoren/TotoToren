@@ -72,10 +72,17 @@ export default function ThirdPlacePicker({
           </div>
         </div>
         <div className="space-y-2 border-t border-white/10 pt-3">
-          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">שלב 2 — לאיזה מיקום?</p>
+          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">שלב 2 — לאיזה מיקום? (לא הגרלה!)</p>
           <p className="text-sm text-white/60">
-            המיקום בסבב 32 נקבע לפי <strong className="text-white">מאיזה בית הקבוצה הגיעה</strong>.
-            FIFA קובעת מראש איזה בית ממלא איזה מיקום.
+            המיקום <strong className="text-white">לא נקבע בהגרלה</strong> — FIFA קבעה מראש טבלה קבועה:
+            בהתאם ל<strong className="text-white">אילו 8 בתים</strong> שלחו קבוצה, כל בית מקבל מיקום ספציפי.
+          </p>
+          <p className="text-sm text-white/60">
+            לדוגמה: אם בית C יעבור, הוא עשוי להגיע ל-M75, M78 או M79 — תלוי אילו 7 בתים אחרים גם עברו.
+            הבתים המוצגים ליד כל משבצת הם כל הבתים <strong className="text-white">שיכולים</strong> להגיע לשם תחת שילובים שונים.
+          </p>
+          <p className="text-sm text-amber-300/80 font-medium">
+            ↳ בניחוש: בחר את 8 הבתים שניחשת שיעברו, ולפי הטבלה של FIFA — הצב כל אחד במיקום הנכון.
           </p>
         </div>
       </GlassCard>
