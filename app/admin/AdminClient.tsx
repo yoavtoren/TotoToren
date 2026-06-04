@@ -111,8 +111,12 @@ export default function AdminClient({
       body: JSON.stringify({ matchId }),
     })
     setResetting(null)
-    if (res.ok) { showToast('תוצאה נמחקה ✓'); window.location.reload() }
-    else showToast((await res.json()).error, false)
+    if (res.ok) {
+      const calcRes = await fetch('/api/scores/recalculate', { method: 'POST', headers: authHeaders })
+      const calcData = await calcRes.json()
+      showToast(`תוצאה נמחקה ✓  ${calcData.message ?? ''}`)
+      window.location.reload()
+    } else showToast((await res.json()).error, false)
   }
 
   function renderRow(m: Match) {
