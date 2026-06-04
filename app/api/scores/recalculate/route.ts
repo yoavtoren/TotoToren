@@ -70,6 +70,13 @@ export async function POST(request: NextRequest) {
   // Also include any knockout match winners (for rounds beyond R32)
   const realR32Teams = r32Teams.size > 0 ? r32Teams : new Set(Object.values(knockoutWinnerIds).filter(Boolean) as number[])
 
+  // Load manually-selected stage qualifiers (overrides match-score derivation)
+  const { data: stageRows } = await admin.from("knockout_stage_qualifiers").select("stage, team_id")
+  const stageQualMap: Record<string, Set<number>> = { r16: new Set(), qf: new Set(), sf: new Set(), final: new Set(), champion: new Set() }
+  for (const r of (stageRows ?? []) as any[]) {
+    if (stageQualMap[r.stage]) stageQualMap[r.stage].add(r.team_id as number)
+  }
+
   // Load futures result
   const { data: futuresResultRow } = await admin
     .from('futures_results').select('*').order('entered_at', { ascending: false }).limit(1).maybeSingle()
@@ -152,20 +159,20 @@ export async function POST(request: NextRequest) {
     const predWinnerIds = new Set(userKPreds.map((r: any) => r.predicted_winner_id as number))
     let advancementPts = scoreAdvancement(predWinnerIds, realR32Teams, 'ADV_R32')
     advancementPts += scoreAdvancement(
-      new Set([...userKPreds].filter((p: any) => realWinnersByStage.r32.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
-      realWinnersByStage.r16, 'ADV_R16'
+      predWinnerIds,
+      stageQualMap.r16.size > 0 ? stageQualMap.r16 : realWinnersByStage.r16, 'ADV_R16'
     )
     advancementPts += scoreAdvancement(
-      new Set([...userKPreds].filter((p: any) => realWinnersByStage.r16.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
-      realWinnersByStage.qf, 'ADV_QF'
+      predWinnerIds,
+      stageQualMap.qf.size > 0 ? stageQualMap.qf : realWinnersByStage.qf, 'ADV_QF'
     )
     advancementPts += scoreAdvancement(
-      new Set([...userKPreds].filter((p: any) => realWinnersByStage.qf.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
-      realWinnersByStage.sf, 'ADV_SF'
+      predWinnerIds,
+      stageQualMap.sf.size > 0 ? stageQualMap.sf : realWinnersByStage.sf, 'ADV_SF'
     )
     advancementPts += scoreAdvancement(
-      new Set([...userKPreds].filter((p: any) => realWinnersByStage.sf.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
-      realWinnersByStage.final, 'ADV_FINAL'
+      predWinnerIds,
+      stageQualMap.final.size > 0 ? stageQualMap.final : realWinnersByStage.final, 'ADV_FINAL'
     )
 
     // 6.4 Knockout scorelines — independent: total goals and exact score

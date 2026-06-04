@@ -18,11 +18,13 @@ export default async function AdminPage() {
   const [
     { data: groupMatches }, { data: knockoutMatches },
     { data: actualStandingsRows }, { data: thirdQualifierRows },
+    { data: stageQualifierRows },
   ] = await Promise.all([
     admin.from('matches').select('*').eq('stage', 'group').order('scheduled_at'),
     admin.from('matches').select('*').neq('stage', 'group').order('scheduled_at'),
     admin.from('group_actual_standings').select('*').order('position'),
     admin.from('r32_third_place_qualifiers').select('team_id'),
+    admin.from('knockout_stage_qualifiers').select('stage, team_id'),
   ])
 
   // Build actualStandings map: group_letter → [1st,2nd,3rd,4th] team_ids
@@ -32,6 +34,13 @@ export default async function AdminPage() {
     actualStandings[row.group_letter][row.position - 1] = row.team_id
   }
 
+  // Build stageQualifiers: stage → Set<team_id>
+  const stageQualifiers: Record<string, number[]> = {}
+  for (const row of (stageQualifierRows ?? []) as any[]) {
+    if (!stageQualifiers[row.stage]) stageQualifiers[row.stage] = []
+    stageQualifiers[row.stage].push(row.team_id)
+  }
+
   return (
     <AdminClient
       groupMatches={groupMatches ?? []}
@@ -39,6 +48,7 @@ export default async function AdminPage() {
       adminToken={expectedToken}
       actualStandings={actualStandings}
       thirdQualifiers={(thirdQualifierRows ?? []).map((r: any) => r.team_id)}
+      stageQualifiers={stageQualifiers}
     />
   )
 }
