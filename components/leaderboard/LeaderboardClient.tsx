@@ -8,6 +8,11 @@ import GlassCard from '@/components/ui/GlassCard'
 import { cn } from '@/lib/utils'
 import { GROUP_LETTERS, TOURNAMENT_START } from '@/lib/constants'
 
+interface FuturePred {
+  user_id: string
+  champion_team_id: number | null
+}
+
 // ── Types ─────────────────────────────────────────────────────
 
 interface ScoreEntry {
@@ -71,71 +76,379 @@ function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
   )
 }
 
+// ── Helpers for breakdown counts ──────────────────────────────
+// Possible group-match point values: 0, 1, 2, 3, 6
+// 6 = exact score (always includes outcome+goals)
+// 3 = outcome + goals correct (not exact)
+// 2 = only goals correct
+// 1 = only outcome correct
+
+function matchCounts(breakdown: any) {
+  const vals = Object.values((breakdown as any)?.group_matches ?? {}) as number[]
+  return {
+    outcome: vals.filter(v => v === 1 || v === 3 || v === 6).length,
+    goals:   vals.filter(v => v === 2 || v === 3 || v === 6).length,
+    exact:   vals.filter(v => v === 6).length,
+  }
+}
+
+// ── User Predictions Modal ────────────────────────────────────
+
+function UserPredictionsModal({
+  profile,
+  entry,
+  preds,
+  loading,
+  onClose,
+}: {
+  profile: Profile | null
+  entry: ScoreEntry | null
+  preds: UserPreds | null
+  loading: boolean
+  onClose: () => void
+}) {
+  const [modalTab, setModalTab] = useState<'predictions' | 'scoring'>('predictions')
+  const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
+
+  const nextMatchId = useMemo(() => {
+    const now = Date.now()
+    return GROUP_MATCHES
+      .filter(m => new Date(m.kickoff_utc).getTime() > now)
+      .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())[0]?.match ?? null
+  }, [])
+
+  const breakdown: Record<string, number> = (entry as any)?.breakdown?.group_matches ?? {}
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative z-10 w-full max-w-xl flex flex-col glass rounded-2xl overflow-hidden"
+        style={{ maxHeight: 'calc(100vh - 4rem)' }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10 shrink-0">
+          <Avatar name={profile?.display_name ?? '?'} />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-white text-base truncate">{profile?.display_name ?? '…'}</p>
+            {entry && (
+              <p className="text-xs text-white/40">{entry.total_score} נקודות</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/40 hover:text-white/80 text-xl leading-none p-1 transition-colors"
+          >✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 px-4 pt-3 pb-2 shrink-0">
+          <button
+            onClick={() => setModalTab('predictions')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              modalTab === 'predictions' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/70'
+            )}
+          >ניחושים</button>
+          <button
+            onClick={() => setModalTab('scoring')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              modalTab === 'scoring' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/70'
+            )}
+          >ניקוד משחקים קודמים</button>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5">
+          {loading && (
+            <div className="space-y-2 animate-pulse pt-2">
+              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-8 glass rounded-xl" />)}
+            </div>
+          )}
+
+          {!loading && preds && modalTab === 'predictions' && (
+            <div className="space-y-6">
+              {/* Group Matches */}
+              <div className="space-y-4">
+                {GROUP_LETTERS.map(g => {
+                  const matches = GROUP_MATCHES_BY_GROUP[g] ?? []
+                  return (
+                    <div key={g}>
+                      <p className="text-[10px] text-white/40 uppercase font-mono mb-2 tracking-wider">קבוצה {g}</p>
+                      <div className="space-y-1">
+                        {matches.map(m => {
+                          const pred = preds.groupMatches[m.match]
+                          const isNext = m.match === nextMatchId
+                          const kicked = new Date(m.kickoff_utc).getTime() < Date.now()
+                          return (
+                            <div
+                              key={m.match}
+                              className={cn(
+                                'flex items-center gap-2 text-xs px-3 py-2 rounded-xl transition-all',
+                                isNext
+                                  ? 'ring-1 ring-emerald-400/60 bg-emerald-500/15'
+                                  : 'glass'
+                              )}
+                            >
+                              <span className="text-white/30 w-14 font-mono shrink-0" dir="ltr">{localShortDt(m.kickoff_utc)}</span>
+                              <span className="flex-1 text-white/80 truncate">{m.home}</span>
+                              {pred && kicked ? (
+                                <span className="font-mono font-bold text-white shrink-0 tabular-nums" dir="ltr">
+                                  {pred.predicted_home}:{pred.predicted_away}
+                                  <span className="mr-1">{outcomeOf(pred.predicted_home, pred.predicted_away)}</span>
+                                </span>
+                              ) : (
+                                <span className="text-white/20 shrink-0 font-mono text-[11px]">
+                                  {isNext ? '🔜' : '🔒'}
+                                </span>
+                              )}
+                              <span className="flex-1 text-white/80 truncate text-left">{m.away}</span>
+                              {isNext && (
+                                <span className="text-emerald-400 text-[9px] font-bold shrink-0 bg-emerald-500/20 rounded px-1 py-0.5 whitespace-nowrap">
+                                  הבא ▶
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Group Standings */}
+              <div>
+                <p className="text-[10px] text-white/40 uppercase font-mono mb-2 tracking-wider">ניחושי דירוג ליגות</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {GROUP_LETTERS.map(g => {
+                    const order = preds.groupStandings[g]
+                    const revealed = new Date(GROUP_MATCHES_BY_GROUP[g]?.[0]?.kickoff_utc ?? 0).getTime() < Date.now()
+                    return (
+                      <div key={g} className="glass rounded-xl px-3 py-2">
+                        <p className="text-[10px] text-white/30 font-mono mb-1">Group {g}</p>
+                        {!order || order.length === 0 ? (
+                          <p className="text-xs text-white/20 italic">—</p>
+                        ) : (
+                          <div className="space-y-0.5">
+                            {order.map((teamId, idx) => {
+                              const team = getTeamById(teamId)
+                              return (
+                                <div key={teamId} className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-white/30 w-4 shrink-0">{idx + 1}.</span>
+                                  {revealed && team ? (
+                                    <>
+                                      <span className="text-sm">{getFlagEmoji(team.flag_code)}</span>
+                                      <span className="text-xs text-white truncate">{team.name}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-xs text-white/20">🔒</span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Futures */}
+              {preds.futures && (
+                <div>
+                  <p className="text-[10px] text-white/40 uppercase font-mono mb-2 tracking-wider">פיוצ&apos;רס</p>
+                  <div className="space-y-1">
+                    {(Object.entries(FUTURES_LABELS) as [string, string][]).map(([key, label]) => {
+                      const teamId = (preds.futures as any)?.[key]
+                      const team = teamId ? getTeamById(teamId) : null
+                      return (
+                        <div key={key} className="flex items-center gap-2 text-xs glass rounded-xl px-3 py-2">
+                          <span className="text-white/40 w-36 shrink-0">{label}</span>
+                          {team ? (
+                            <>
+                              <span>{getFlagEmoji(team.flag_code)}</span>
+                              <span className="text-white">{team.name}</span>
+                            </>
+                          ) : (
+                            <span className="text-white/25">—</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {preds.futures.total_goals_prediction != null && (
+                      <div className="flex items-center gap-2 text-xs glass rounded-xl px-3 py-2">
+                        <span className="text-white/40 w-36 shrink-0">Total Goals</span>
+                        <span className="text-white font-mono">{preds.futures.total_goals_prediction}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!loading && preds && modalTab === 'scoring' && (
+            <div className="space-y-4 pt-1">
+              <p className="text-xs text-white/40">ניקוד למשחקים שהסתיימו</p>
+              {(() => {
+                const hasPast = GROUP_LETTERS.some(g =>
+                  (GROUP_MATCHES_BY_GROUP[g] ?? []).some(m => new Date(m.kickoff_utc).getTime() < Date.now())
+                )
+                if (!hasPast) return (
+                  <p className="text-xs text-white/30 italic text-center py-6">המשחקים עוד לא התחילו</p>
+                )
+                return GROUP_LETTERS.map(g => {
+                  const past = (GROUP_MATCHES_BY_GROUP[g] ?? []).filter(m =>
+                    new Date(m.kickoff_utc).getTime() < Date.now()
+                  )
+                  if (past.length === 0) return null
+                  return (
+                    <div key={g}>
+                      <p className="text-[10px] text-white/40 uppercase font-mono mb-2">קבוצה {g}</p>
+                      <div className="space-y-1">
+                        {past.map(m => {
+                          const pred = preds.groupMatches[m.match]
+                          const pts = breakdown[String(m.match)] ?? (breakdown as any)[m.match] ?? null
+                          return (
+                            <div key={m.match} className="flex items-center gap-2 text-xs px-3 py-2 glass rounded-xl">
+                              <span className="text-white/30 w-14 font-mono shrink-0" dir="ltr">{localShortDt(m.kickoff_utc)}</span>
+                              <span className="text-white/70 flex-1 truncate">{m.home} – {m.away}</span>
+                              {pred ? (
+                                <span className="font-mono text-white/50 shrink-0 tabular-nums" dir="ltr">
+                                  {pred.predicted_home}:{pred.predicted_away}
+                                </span>
+                              ) : (
+                                <span className="text-white/20 shrink-0">—</span>
+                              )}
+                              <span className={cn(
+                                'font-bold tabular-nums shrink-0 w-8 text-left',
+                                pts === 6 ? 'text-emerald-300' :
+                                pts === 3 ? 'text-emerald-400/70' :
+                                pts === 2 ? 'text-blue-300' :
+                                pts === 1 ? 'text-amber-300' :
+                                pts === 0 ? 'text-rose-300/70' :
+                                'text-white/20'
+                              )}>
+                                {pts != null ? `+${pts}` : '—'}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Section: Standings Table ──────────────────────────────────
 
-function StandingsSection({ entries }: { entries: ScoreEntry[] }) {
-  if (entries.length === 0) {
-    return (
-      <GlassCard className="text-center py-14">
-        <div className="text-5xl mb-4">🏆</div>
-        <p className="text-white/50 text-sm">עדיין אין ניקוד — היו הראשונים לשלוח ניחושים!</p>
-      </GlassCard>
-    )
-  }
+function StandingsSection({
+  entries, futureMap, myUserId, onClickUser,
+}: {
+  entries: ScoreEntry[]
+  futureMap: Map<string, number | null>
+  myUserId: string | null
+  onClickUser: (userId: string) => void
+}) {
+  const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
 
-  const cols = [
-    { key: 'group_match_points',    label: 'משחקים',  short: 'מש'  },
-    { key: 'group_standing_points', label: 'בתים',    short: 'בת'  },
-    { key: 'advancement_points',    label: 'התקדמות', short: 'הת' },
-    { key: 'knockout_score_points', label: 'נוקאאוט', short: 'נק'  },
-    { key: 'futures_points',        label: 'עתידיות', short: 'עת' },
+  const STAT_COLS = [
+    { id: 'outcome', label: '1X2', title: 'תוצאות נכונות (מי ניצח)' },
+    { id: 'goals',   label: '⚽',  title: 'שערים נכונים (סכום)' },
+    { id: 'exact',   label: '🎯',  title: 'תוצאות מדויקות' },
   ] as const
 
   return (
     <div className="space-y-1">
       {/* Column headers */}
-      <div className="flex items-center gap-3 px-4 pb-1">
+      <div className="flex items-center gap-2 px-4 pb-1">
         <span className="w-8 shrink-0" />
         <span className="w-9 shrink-0" />
         <span className="flex-1" />
-        <div className="hidden sm:flex items-center gap-3 mr-3">
-          {cols.map(c => (
-            <span key={c.key} className="text-[10px] text-white/30 uppercase w-10 text-center">{c.short}</span>
+        <div className="hidden sm:flex items-center gap-4 mr-2">
+          {STAT_COLS.map(c => (
+            <span key={c.id} title={c.title} className="text-[10px] text-white/30 w-8 text-center cursor-default">{c.label}</span>
           ))}
+          <span className="text-[10px] text-white/30 w-8 text-center" title="אלוף מנוחש">🏆</span>
         </div>
-        <span className="text-[10px] text-white/30 uppercase w-14 text-right">Total</span>
-        <span className="w-4 shrink-0" />
+        <span className="text-[10px] text-white/30 uppercase w-14 text-right shrink-0">Total</span>
       </div>
 
+      {entries.length === 0 && (
+        <GlassCard className="text-center py-14">
+          <div className="text-5xl mb-4">🏆</div>
+          <p className="text-white/50 text-sm">עדיין אין משתתפים — הצטרפו!</p>
+        </GlassCard>
+      )}
+
       {entries.map((entry, i) => {
-        const medal = RANK_MEDALS[i] ?? `#${i + 1}`
+        const isMe = entry.user_id === myUserId
+        const isLast = i === entries.length - 1 && entries.length > 1
+        const medal = isLast ? '🤡' : (RANK_MEDALS[i] ?? `#${i + 1}`)
+        const counts = matchCounts((entry as any).breakdown)
+        const championId = futureMap.get(entry.user_id) ?? null
+        const champion = championId ? getTeamById(championId) : null
+
         return (
-          <GlassCard key={entry.user_id} className="py-3">
-            <div className="flex items-center gap-3">
+          <GlassCard
+            key={entry.user_id}
+            className={cn(
+              'py-3 transition-all cursor-pointer hover:bg-white/5 active:scale-[0.99]',
+              isMe && 'ring-2 ring-indigo-400/60 bg-indigo-500/10',
+            )}
+            onClick={() => onClickUser(entry.user_id)}
+          >
+            <div className="flex items-center gap-2">
               <span className="text-xl w-8 text-center shrink-0">{medal}</span>
               <Avatar name={entry.profiles?.display_name ?? '?'} />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white truncate text-sm">
-                  {entry.profiles?.display_name ?? 'Unknown'}
+                <p className="font-semibold text-white truncate text-sm flex items-center gap-1.5 hover:underline underline-offset-2">
+                  {entry.profiles?.display_name ?? 'לא ידוע'}
+                  {isMe && <span className="text-[10px] text-indigo-300 font-normal bg-indigo-500/20 px-1.5 py-0.5 rounded-full shrink-0">אתה</span>}
                 </p>
-                {/* Mobile breakdown */}
+                {/* Mobile: compact stats */}
                 <p className="text-[10px] text-white/35 sm:hidden">
-                  GM {entry.group_match_points ?? 0} · GS {entry.group_standing_points ?? 0} · KO {entry.knockout_score_points ?? 0} · Fut {entry.futures_points ?? 0}
+                  1X2: {counts.outcome} · ⚽: {counts.goals} · 🎯: {counts.exact}
                 </p>
               </div>
-              {/* Desktop breakdown */}
-              <div className="hidden sm:flex items-center gap-3 mr-3">
-                {cols.map(c => (
-                  <span key={c.key} className="text-xs text-white/50 w-10 text-center tabular-nums">
-                    {(entry as any)[c.key] ?? 0}
+
+              {/* Desktop stat columns */}
+              <div className="hidden sm:flex items-center gap-4 mr-2">
+                {STAT_COLS.map(c => (
+                  <span key={c.id} className="text-xs text-white/60 w-8 text-center tabular-nums font-mono">
+                    {counts[c.id]}
                   </span>
                 ))}
+                {/* Champion column */}
+                <span className="w-8 text-center text-base" title={champion?.name ?? 'לא נבחר'}>
+                  {!tournamentStarted
+                    ? <span className="text-[10px] text-white/20">🔒</span>
+                    : champion
+                      ? getFlagEmoji(champion.flag_code)
+                      : <span className="text-[10px] text-white/25">—</span>
+                  }
+                </span>
               </div>
+
               <div className="text-right shrink-0 w-14">
                 <p className="text-xl font-bold text-emerald-300 tabular-nums">{entry.total_score ?? 0}</p>
               </div>
-              {/* Spacing placeholder for the chevron that Browse section has */}
-              <span className="w-4 shrink-0" />
             </div>
           </GlassCard>
         )
@@ -522,33 +835,108 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 export default function LeaderboardClient({
   initialScores,
   allProfiles,
+  initialFutures,
 }: {
   initialScores: ScoreEntry[]
   allProfiles: Profile[]
+  initialFutures: FuturePred[]
 }) {
   const [scores, setScores] = useState(initialScores)
+  const [profiles, setProfiles] = useState(allProfiles)
+  const [futures, setFutures] = useState(initialFutures)
   const [tab, setTab] = useState<Tab>('standings')
+  const [myUserId, setMyUserId] = useState<string | null>(null)
 
-  // Real-time score updates
+  // User predictions modal
+  const [modalUserId, setModalUserId] = useState<string | null>(null)
+  const [modalPreds, setModalPreds] = useState<UserPreds | null>(null)
+  const [modalLoading, setModalLoading] = useState(false)
+
+  const openUserModal = useCallback(async (userId: string) => {
+    setModalUserId(userId)
+    setModalLoading(true)
+    setModalPreds(null)
+    const supabase = createClient()
+    const [gm, gs, ko, fut] = await Promise.all([
+      supabase.from('group_match_predictions').select('*').eq('user_id', userId),
+      supabase.from('group_predictions').select('*').eq('user_id', userId).order('predicted_position'),
+      supabase.from('knockout_predictions').select('*').eq('user_id', userId),
+      supabase.from('futures_predictions').select('*').eq('user_id', userId).maybeSingle(),
+    ])
+    const groupMatches: UserPreds['groupMatches'] = {}
+    for (const r of gm.data ?? []) groupMatches[r.match_id] = { predicted_home: r.predicted_home, predicted_away: r.predicted_away }
+    const groupStandings: UserPreds['groupStandings'] = {}
+    for (const r of (gs.data ?? []) as any[]) {
+      if (!groupStandings[r.group_letter]) groupStandings[r.group_letter] = []
+      groupStandings[r.group_letter].push(r.team_id)
+    }
+    setModalPreds({
+      groupMatches,
+      groupStandings,
+      knockout: (ko.data ?? []) as UserPreds['knockout'],
+      futures: (fut.data as any) ?? null,
+    })
+    setModalLoading(false)
+  }, [])
+
+  // On mount: fresh client-side fetch so ISR staleness doesn't hide new users,
+  // then subscribe to all tables for real-time updates.
   useEffect(() => {
     const supabase = createClient()
-    const channel = supabase
+
+    async function fetchAll() {
+      // Don't re-fetch profiles — the server uses admin client (bypasses RLS)
+      // and the anon-key client would only return the current user's own row.
+      const [{ data: s }, { data: f }, { data: { user } }] = await Promise.all([
+        supabase.from('scores').select('*, profiles(display_name, avatar_url)').order('total_score', { ascending: false }),
+        supabase.from('futures_predictions').select('user_id, champion_team_id'),
+        supabase.auth.getUser(),
+      ])
+      if (s) setScores(s as ScoreEntry[])
+      if (f) setFutures(f as FuturePred[])
+      if (user) setMyUserId(user.id)
+
+      // Add current user to the server-provided list only if missing
+      if (user) {
+        setProfiles(prev => {
+          if (prev.find(p => p.id === user.id)) return prev
+          return [
+            ...prev,
+            {
+              id: user.id,
+              display_name:
+                user.user_metadata?.display_name ??
+                user.user_metadata?.full_name ??
+                user.email?.split('@')[0] ??
+                'Unknown',
+              avatar_url: user.user_metadata?.avatar_url ?? null,
+            },
+          ]
+        })
+      }
+    }
+    fetchAll()
+
+    const scoresChannel = supabase
       .channel('scores-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, async () => {
-        const { data } = await supabase
-          .from('scores')
-          .select('*, profiles(display_name, avatar_url)')
-          .order('total_score', { ascending: false })
-        if (data) setScores(data as ScoreEntry[])
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, fetchAll)
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+
+    const profilesChannel = supabase
+      .channel('profiles-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAll)
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(scoresChannel)
+      supabase.removeChannel(profilesChannel)
+    }
   }, [])
 
   // Merge all profiles with scores — everyone shows up even with 0 pts
   const mergedEntries = useMemo(() => {
     const scoreMap = new Map(scores.map(s => [s.user_id, s]))
-    return allProfiles
+    return profiles
       .map(p => scoreMap.get(p.id) ?? ({
         user_id: p.id,
         total_score: 0,
@@ -561,35 +949,50 @@ export default function LeaderboardClient({
         profiles: { display_name: p.display_name, avatar_url: p.avatar_url },
       } as ScoreEntry))
       .sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0))
-  }, [scores, allProfiles])
+  }, [scores, profiles])
+
+  const futureMap = useMemo(
+    () => new Map(futures.map(f => [f.user_id, f.champion_team_id])),
+    [futures]
+  )
 
   const topScore = mergedEntries[0]?.total_score ?? 0
   const avgScore = scores.length
     ? Math.round(scores.reduce((s, e) => s + (e.total_score ?? 0), 0) / scores.length)
     : 0
+  const myRank = myUserId
+    ? mergedEntries.findIndex(e => e.user_id === myUserId) + 1
+    : null
 
   return (
+    <>
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-extrabold text-shadow">טבלת ניקוד</h1>
         <p className="text-sm text-white/50 mt-1">
-          {allProfiles.length} משתתפים · הניקוד מתעדכן לאחר כל משחק · הניחושים ננעלים עם קיקאוף ראשון
+          {profiles.length} משתתפים · הניקוד מתעדכן לאחר כל משחק · הניחושים ננעלים עם קיקאוף ראשון
         </p>
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'משתתפים', value: allProfiles.length },
-          { label: 'ניקוד מוביל',    value: topScore },
-          { label: 'ממוצע',    value: avgScore },
+          { label: 'משתתפים',   value: String(profiles.length) },
+          { label: 'ניקוד מוביל', value: String(topScore) },
+          { label: 'ממוצע',     value: String(avgScore) },
         ].map(({ label, value }) => (
           <GlassCard key={label} className="text-center py-4">
             <p className="text-2xl font-bold text-emerald-300 tabular-nums">{value}</p>
             <p className="text-xs text-white/40 mt-0.5">{label}</p>
           </GlassCard>
         ))}
+        <GlassCard className="text-center py-4 ring-1 ring-indigo-400/30">
+          <p className="text-2xl font-bold text-indigo-300 tabular-nums">
+            {myRank ? `#${myRank}` : '—'}
+          </p>
+          <p className="text-xs text-white/40 mt-0.5">המיקום שלי</p>
+        </GlassCard>
       </div>
 
       {/* Tabs */}
@@ -610,9 +1013,21 @@ export default function LeaderboardClient({
       </div>
 
       {/* Tab content */}
-      {tab === 'standings' && <StandingsSection entries={mergedEntries} />}
+      {tab === 'standings' && <StandingsSection entries={mergedEntries} futureMap={futureMap} myUserId={myUserId} onClickUser={openUserModal} />}
       {tab === 'live'      && <LiveSection />}
-      {tab === 'browse'    && <BrowseSection profiles={allProfiles} />}
+      {tab === 'browse'    && <BrowseSection profiles={profiles} />}
     </div>
+
+    {/* User predictions modal */}
+    {modalUserId && (
+      <UserPredictionsModal
+        profile={profiles.find(p => p.id === modalUserId) ?? null}
+        entry={mergedEntries.find(e => e.user_id === modalUserId) ?? null}
+        preds={modalPreds}
+        loading={modalLoading}
+        onClose={() => { setModalUserId(null); setModalPreds(null) }}
+      />
+    )}
+  </>
   )
 }
