@@ -277,6 +277,7 @@ export default function KnockoutBracket({
       </div>
 
       {/* dir=ltr: bracket always reads left→right regardless of page language */}
+      <div className="overflow-x-auto -mx-4 px-4 pb-2">
       <div dir="ltr" style={{ width: HALF_W * 2 + CENTER_W }}>
 
         {/* Round label row */}
@@ -412,6 +413,7 @@ export default function KnockoutBracket({
 
         </div>
       </div>
+      </div> {/* overflow-x-auto wrapper */}
     </section>
   )
 }
