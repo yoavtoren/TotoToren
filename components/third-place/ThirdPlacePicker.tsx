@@ -17,6 +17,151 @@ for (const g of GROUP_LETTERS) {
   )
 }
 
+// Slot → eligible groups map
+const SLOT_ELIGIBLE_GROUPS: Record<number, string[]> = {}
+for (const m of THIRD_MATCH_NUMS) {
+  SLOT_ELIGIBLE_GROUPS[m] = getThirdFromGroups(m, 'home') ?? getThirdFromGroups(m, 'away') ?? []
+}
+
+/**
+ * Given a set of 8 qualifying groups, solve the slot assignment via backtracking.
+ * Returns { groupToSlot, slotToGroup } if a unique solution exists,
+ * or null if the combination is invalid / multiple solutions exist.
+ */
+function solveAssignment(qualifying: string[]): { groupToSlot: Record<string, number>; slotToGroup: Record<number, string> } | null {
+  const slots = THIRD_MATCH_NUMS
+  const solutions: Array<Record<string, number>> = []
+
+  function backtrack(
+    remaining: string[],
+    usedSlots: Set<number>,
+    partial: Record<string, number>,
+  ) {
+    if (solutions.length > 1) return // stop early if more than one found
+    if (remaining.length === 0) {
+      solutions.push({ ...partial })
+      return
+    }
+    // pick the group with fewest eligible slots first (most constrained)
+    const sorted = [...remaining].sort((a, b) => {
+      const aOptions = GROUP_ELIGIBLE_SLOTS[a].filter(s => !usedSlots.has(s) && qualifying.includes(SLOT_ELIGIBLE_GROUPS[s]?.[0] ?? '') || true)
+      const bOptions = GROUP_ELIGIBLE_SLOTS[b].filter(s => !usedSlots.has(s))
+      return (
+        GROUP_ELIGIBLE_SLOTS[a].filter(s => !usedSlots.has(s)).length -
+        GROUP_ELIGIBLE_SLOTS[b].filter(s => !usedSlots.has(s)).length
+      )
+    })
+    const group = sorted[0]
+    const rest = sorted.slice(1)
+    for (const slot of GROUP_ELIGIBLE_SLOTS[group]) {
+      if (usedSlots.has(slot)) continue
+      // slot must accept this group
+      if (!SLOT_ELIGIBLE_GROUPS[slot].includes(group)) continue
+      // all groups going to this slot must be from qualifying
+      usedSlots.add(slot)
+      partial[group] = slot
+      backtrack(rest, usedSlots, partial)
+      usedSlots.delete(slot)
+      delete partial[group]
+    }
+  }
+
+  backtrack(qualifying, new Set(), {})
+
+  if (solutions.length !== 1) return null
+  const groupToSlot = solutions[0]
+  const slotToGroup: Record<number, string> = {}
+  for (const [g, s] of Object.entries(groupToSlot)) slotToGroup[s] = g
+  return { groupToSlot, slotToGroup }
+}
+
+// ── Combination Calculator ─────────────────────────────────────────────────────
+function CombinationCalculator() {
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  function toggle(g: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(g)) { next.delete(g); return next }
+      if (next.size >= 8) return prev
+      next.add(g); return next
+    })
+  }
+
+  const result = selected.size === 8 ? solveAssignment([...selected]) : null
+
+  return (
+    <div className="space-y-3 border-t border-white/10 pt-3">
+      <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+        מחשבון שילוב — בחר 8 בתים כדי לראות היכן כל אחד ממוקם
+      </p>
+      <p className="text-xs text-white/40">
+        בחר את 8 הבתים שאתה מנחש שישלחו נבחרת לשלב הנוקאאוט. המחשבון יראה לך לאיזה משחק כל בית הולך.
+      </p>
+
+      {/* Group selector */}
+      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+        {GROUP_LETTERS.map(g => {
+          const sel = selected.has(g)
+          const full = selected.size >= 8 && !sel
+          return (
+            <button
+              key={g}
+              onClick={() => toggle(g)}
+              disabled={full}
+              className={cn(
+                'rounded-lg py-1.5 text-xs font-bold font-mono transition-all',
+                sel
+                  ? 'bg-indigo-500/40 border border-indigo-400/60 text-indigo-200'
+                  : full
+                    ? 'bg-white/3 border border-white/8 text-white/20 cursor-not-allowed'
+                    : 'bg-white/8 border border-white/15 text-white/60 hover:bg-white/15 hover:text-white',
+              )}
+            >
+              {g}
+            </button>
+          )
+        })}
+      </div>
+
+      <p className={cn(
+        'text-xs text-center font-mono',
+        selected.size === 8 ? 'text-indigo-300' : 'text-white/30',
+      )}>
+        {selected.size}/8 נבחרו
+      </p>
+
+      {/* Result */}
+      {selected.size === 8 && (
+        result ? (
+          <div className="space-y-1.5">
+            <p className="text-xs text-emerald-400/70 font-semibold">✓ שילוב תקין — הצבה:</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {THIRD_MATCH_NUMS.map(slot => {
+                const group = result.slotToGroup[slot]
+                return (
+                  <div key={slot} className="rounded-lg bg-white/5 border border-white/10 px-2.5 py-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono text-white/35 shrink-0">M{slot}</span>
+                    {group ? (
+                      <span className="text-xs font-bold text-indigo-200 font-mono">בית {group}</span>
+                    ) : (
+                      <span className="text-[10px] text-white/20">—</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-amber-400/70 text-center">
+            שילוב זה אינו חד-משמעי — ייתכן מספר הצבות תקינות. נסה שילוב אחר.
+          </p>
+        )
+      )}
+    </div>
+  )
+}
+
 interface ThirdPlacePickerProps {
   available3rdPlaceTeams: Record<string, number | null>
   assigned: Record<number, number | null>
@@ -133,6 +278,8 @@ export default function ThirdPlacePicker({
           </div>
           <p className="text-[11px] text-white/30">המשבצת המדויקת בתוך האפשריות נקבעת לפי שילוב הבתים שעברו.</p>
         </div>
+
+        <CombinationCalculator />
       </GlassCard>
 
       {/* ── Step 1: Pick a team ─────────────────────────────────── */}
