@@ -121,10 +121,43 @@ export async function POST(request: NextRequest) {
       if (realOrder) groupStandingPts += scoreGroupStandings(predictedOrder, realOrder)
     }
 
-    // 6.3 Advancement — approximate: set of teams user predicted as knockout winners
+    // 6.3 Advancement — score each tier by matching predicted winners vs real winners per round
     const userKPreds = (allKnockoutPreds as any[]).filter((r: any) => r.user_id === uid)
+    const predByMatch: Record<number, number> = {}
+    for (const p of userKPreds) predByMatch[p.match_num] = p.predicted_winner_id
+
+    // Real winners per round (derived from match results)
+    const realWinnersByStage: Record<string, Set<number>> = {
+      r32: new Set(), r16: new Set(), qf: new Set(), sf: new Set(), final: new Set(),
+    }
+    for (const m of (completedMatches as any[])) {
+      if (m.stage === 'group') continue
+      const winner = m.home_score > m.away_score ? m.home_team_id : m.away_score > m.home_score ? m.away_team_id : null
+      if (winner && realWinnersByStage[m.stage]) realWinnersByStage[m.stage].add(winner)
+    }
+    // Also include R32 teams (1st+2nd from each group + qualified 3rd place)
+    const predR32Winners = new Set(
+      Object.entries(knockoutMatchResults).map(([id]) => predByMatch[parseInt(id)]).filter(Boolean) as number[]
+    )
+
     const predWinnerIds = new Set(userKPreds.map((r: any) => r.predicted_winner_id as number))
-    const advancementPts = scoreAdvancement(predWinnerIds, realR32Teams, 'ADV_R32')
+    let advancementPts = scoreAdvancement(predWinnerIds, realR32Teams, 'ADV_R32')
+    advancementPts += scoreAdvancement(
+      new Set([...userKPreds].filter((p: any) => realWinnersByStage.r32.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
+      realWinnersByStage.r16, 'ADV_R16'
+    )
+    advancementPts += scoreAdvancement(
+      new Set([...userKPreds].filter((p: any) => realWinnersByStage.r16.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
+      realWinnersByStage.qf, 'ADV_QF'
+    )
+    advancementPts += scoreAdvancement(
+      new Set([...userKPreds].filter((p: any) => realWinnersByStage.qf.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
+      realWinnersByStage.sf, 'ADV_SF'
+    )
+    advancementPts += scoreAdvancement(
+      new Set([...userKPreds].filter((p: any) => realWinnersByStage.sf.has(p.predicted_winner_id)).map((p: any) => p.predicted_winner_id)),
+      realWinnersByStage.final, 'ADV_FINAL'
+    )
 
     // 6.4 Knockout scorelines
     let koScorePts = 0

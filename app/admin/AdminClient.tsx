@@ -337,6 +337,74 @@ export default function AdminClient({
           </section>
         )}
 
+        {/* Knockout Advancement */}
+        {knockoutMatches.length > 0 && (() => {
+          const winnerOf = (m: Match) =>
+            m.home_score !== null && m.away_score !== null && m.home_team_id && m.away_team_id
+              ? (m.home_score > m.away_score ? m.home_team_id : m.away_team_id)
+              : null
+
+          const tiers: { stage: string; label: string; pts: number; nextLabel: string }[] = [
+            { stage: 'r32',       label: 'סבב 32 (עלו לשמינית גמר)', pts: 5, nextLabel: 'R16' },
+            { stage: 'r16',       label: 'שמינית גמר (עלו לרבע גמר)', pts: 6, nextLabel: 'QF' },
+            { stage: 'qf',        label: 'רבע גמר (עלו לחצי גמר)',    pts: 7, nextLabel: 'SF' },
+            { stage: 'sf',        label: 'חצי גמר (עלו לגמר)',         pts: 8, nextLabel: 'Final' },
+            { stage: 'final',     label: 'גמר — האלוף',                pts: 15, nextLabel: 'Champion' },
+          ]
+
+          return (
+            <section style={{ marginTop: 24 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
+                קבוצות שעלו בכל שלב
+              </h2>
+              <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+                מחושב אוטומטית מתוצאות המשחקים. ניקוד לכל קבוצה שניחשת נכון.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {tiers.map(({ stage, label, pts }) => {
+                  const stageMatches = knockoutMatches.filter(m => m.stage === stage)
+                  const advancingIds = stageMatches.map(winnerOf).filter(Boolean) as number[]
+                  const done = advancingIds.length
+                  const total = stageMatches.length
+
+                  return (
+                    <div key={stage} style={{ background: '#fff', borderRadius: 10, padding: '12px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: done > 0 ? 10 : 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: done === total && total > 0 ? '#c6f6d5' : '#e2e8f0', color: done === total && total > 0 ? '#276749' : '#718096' }}>
+                            {done}/{total}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#3182ce', background: '#ebf8ff', padding: '3px 10px', borderRadius: 20 }}>
+                          +{pts} נק׳ לכל קבוצה נכונה
+                        </span>
+                      </div>
+                      {done > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {advancingIds.map(id => {
+                            const t = getTeamById(id)
+                            if (!t) return null
+                            return (
+                              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f7fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px' }}>
+                                <span style={{ fontSize: 18 }}>{getFlagEmoji(t.flag_code)}</span>
+                                <span style={{ fontSize: 13, fontWeight: 600 }}>{t.name}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {done === 0 && (
+                        <span style={{ fontSize: 12, color: '#a0aec0' }}>— יש להזין תוצאות משחקי {label.split('(')[0].trim()} תחילה —</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )
+        })()}
+
         {/* Group Final Standings */}
         <section style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>
