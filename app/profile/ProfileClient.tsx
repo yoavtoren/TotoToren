@@ -286,74 +286,77 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
       {/* Toast */}
       {toast && (
         <div className={cn(
-          'fixed top-20 right-4 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg animate-fade-in',
-          toast.ok ? 'bg-emerald-500/90 text-white' : 'bg-red-500/90 text-white',
+          'fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl animate-fade-in whitespace-nowrap',
+          toast.ok ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white',
         )}>
           {toast.ok ? '✓ ' : '✕ '}{toast.msg}
         </div>
       )}
 
       {/* ── Profile hero ───────────────────────────────────────── */}
-      <div className="glass rounded-2xl p-6 text-center space-y-4">
-        {/* Avatar */}
-        <div className="flex justify-center">
-          <div className="relative group">
-            <AvatarImg url={profile.avatar_url} name={profile.display_name || 'User'} size="lg" />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-medium"
-            >
-              {uploading ? '…' : '📷'}
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+      <div className="glass rounded-3xl overflow-hidden">
+        {/* Gradient top band */}
+        <div className="h-24 bg-gradient-to-br from-indigo-900/70 via-emerald-900/40 to-transparent" />
+
+        <div className="px-6 pb-6 -mt-14 text-center space-y-4">
+          {/* Avatar + camera */}
+          <div className="flex justify-center">
+            <div className="relative group">
+              <div className="ring-4 ring-black/50 rounded-full shadow-xl">
+                <AvatarImg url={profile.avatar_url} name={profile.display_name || 'User'} size="lg" />
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute inset-0 rounded-full bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xl"
+              >
+                {uploading ? '…' : '📷'}
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </div>
           </div>
+
+          {/* Name editing */}
+          {nameEditing ? (
+            <div className="flex items-center justify-center gap-2 px-4">
+              <input autoFocus value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setNameEditing(false) }}
+                className="glass-input py-2 px-4 text-xl font-bold text-center flex-1 max-w-[220px]" maxLength={40} />
+              <button onClick={saveName} disabled={saving}
+                className="bg-emerald-500/80 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0">
+                {saving ? '…' : 'שמור'}
+              </button>
+              <button onClick={() => { setDisplayName(profile.display_name); setNameEditing(false) }}
+                className="text-white/30 hover:text-white/60 text-lg shrink-0">✕</button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <h1 className="text-2xl font-extrabold text-white">{profile.display_name || 'אנונימי'}</h1>
+              <p className="text-xs text-white/35 font-mono">{email}</p>
+              {favTeam && (
+                <div className="inline-flex items-center gap-2 bg-white/8 rounded-full px-4 py-1.5 mx-auto">
+                  <span className="text-xl">{getFlagEmoji(favTeam.flag_code)}</span>
+                  <span className="text-sm font-semibold text-white/80">{favTeam.name}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Stat pills */}
+          {myScore && (
+            <div className="flex items-center justify-center gap-3 pt-1">
+              <div className="bg-emerald-500/15 ring-1 ring-emerald-400/20 rounded-2xl px-6 py-3 text-center min-w-[90px]">
+                <p className="text-2xl font-extrabold text-emerald-300 tabular-nums">{myPts}</p>
+                <p className="text-[10px] text-emerald-400/50 mt-0.5">נקודות</p>
+              </div>
+              <div className="bg-indigo-500/20 ring-1 ring-indigo-400/25 rounded-2xl px-6 py-3 text-center min-w-[90px]">
+                <p className="text-2xl font-extrabold text-indigo-200 tabular-nums">#{myRank}</p>
+                <p className="text-[10px] text-indigo-300/50 mt-0.5">מתוך {total}</p>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Name */}
-        {nameEditing ? (
-          <div className="flex items-center justify-center gap-2 px-4">
-            <input autoFocus value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setNameEditing(false) }}
-              className="glass-input py-1.5 px-3 text-lg font-bold text-center flex-1 max-w-[200px]" maxLength={40} />
-            <button onClick={saveName} disabled={saving}
-              className="glass px-3 py-1.5 rounded-lg text-sm text-emerald-300 hover:text-emerald-200 shrink-0">
-              {saving ? '…' : 'שמור'}
-            </button>
-            <button onClick={() => { setDisplayName(profile.display_name); setNameEditing(false) }}
-              className="text-white/30 hover:text-white/60 text-sm shrink-0">✕</button>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <div className="flex items-center justify-center gap-2 group/name">
-              <h1 className="text-2xl font-bold text-white">{profile.display_name || 'אנונימי'}</h1>
-              <button onClick={() => setNameEditing(true)}
-                className="text-white/20 hover:text-white/60 transition-colors opacity-0 group-hover/name:opacity-100 text-sm"
-                title="ערוך שם">✎</button>
-            </div>
-            <p className="text-xs text-white/35 font-mono">{email}</p>
-            {favTeam && (
-              <p className="text-sm text-white/45 pt-0.5">
-                {getFlagEmoji(favTeam.flag_code)} {favTeam.name}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Stat pills */}
-        {myScore && (
-          <div className="flex items-center justify-center gap-3 pt-1">
-            <div className="bg-white/8 rounded-xl px-5 py-2.5 text-center min-w-[80px]">
-              <p className="text-2xl font-bold text-white tabular-nums">{myPts}</p>
-              <p className="text-[10px] text-white/40 mt-0.5">נקודות</p>
-            </div>
-            <div className="bg-indigo-500/20 rounded-xl px-5 py-2.5 text-center min-w-[80px] ring-1 ring-indigo-400/20">
-              <p className="text-2xl font-bold text-indigo-200 tabular-nums">#{myRank}</p>
-              <p className="text-[10px] text-indigo-300/60 mt-0.5">מתוך {total}</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Coming Up ─────────────────────────────────────────── */}
@@ -411,52 +414,62 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
 
       {/* ── Settings ──────────────────────────────────────────── */}
       <div className="glass rounded-2xl overflow-hidden">
-        <div className="px-5 pt-5 pb-1">
-          <h2 className="text-xs font-bold text-white/40 uppercase tracking-widest">הגדרות</h2>
+        <div className="px-5 pt-5 pb-3 border-b border-white/8">
+          <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest">הגדרות</h2>
         </div>
 
-        <div className="px-5 pb-4 divide-y divide-white/6">
+        <div className="divide-y divide-white/6">
+
           {/* Display name */}
-          <SettingRow label="שם תצוגה">
-            <span className="text-sm text-white/60 truncate max-w-[140px]">{profile.display_name || '—'}</span>
+          <div className="flex items-center gap-3 px-5 py-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-white/40 mb-0.5">שם תצוגה</p>
+              <p className="text-sm font-semibold text-white truncate">{profile.display_name || '—'}</p>
+            </div>
             <button onClick={() => setNameEditing(true)}
-              className="text-xs text-white/40 hover:text-white/80 transition-colors bg-white/8 hover:bg-white/12 px-3 py-1.5 rounded-lg shrink-0">
-              ✎ עריכה
+              className="flex items-center gap-1.5 bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 hover:text-indigo-200 px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0">
+              ✎ ערוך
             </button>
-          </SettingRow>
+          </div>
 
           {/* Email */}
-          <SettingRow label="אימייל">
-            <span className="text-xs text-white/45 font-mono truncate max-w-[180px]">{email}</span>
-          </SettingRow>
+          <div className="flex items-center gap-3 px-5 py-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-white/40 mb-0.5">אימייל</p>
+              <p className="text-sm font-mono text-white/70 truncate">{email}</p>
+            </div>
+          </div>
 
           {/* Password */}
-          <div className="py-3 border-b border-white/6">
+          <div className="px-5 py-4">
             {!pwOpen ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-white/50 shrink-0">סיסמה</span>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-xs text-white/40 mb-0.5">סיסמה</p>
+                  <p className="text-sm text-white/50">••••••••</p>
+                </div>
                 <button onClick={() => setPwOpen(true)}
-                  className="text-xs text-white/40 hover:text-white/80 transition-colors bg-white/8 hover:bg-white/12 px-3 py-1.5 rounded-lg shrink-0">
-                  שינוי
+                  className="flex items-center gap-1.5 bg-white/10 hover:bg-white/18 text-white/70 hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0">
+                  🔑 שנה
                 </button>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                <span className="text-sm text-white/50">שינוי סיסמה</span>
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-white/70">שינוי סיסמה</p>
                 <input type="password" placeholder="סיסמה חדשה" value={newPw}
                   onChange={e => setNewPw(e.target.value)}
-                  className="glass-input py-2 px-3 text-sm w-full" />
+                  className="glass-input py-2.5 px-4 text-sm w-full" />
                 <input type="password" placeholder="אימות סיסמה" value={confirmPw}
                   onChange={e => setConfirmPw(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleChangePassword() }}
-                  className="glass-input py-2 px-3 text-sm w-full" />
+                  className="glass-input py-2.5 px-4 text-sm w-full" />
                 <div className="flex gap-2 pt-1">
                   <button onClick={handleChangePassword} disabled={pwSaving || !newPw}
-                    className="flex-1 py-2 rounded-lg bg-emerald-600/60 hover:bg-emerald-600/80 disabled:opacity-40 text-white text-sm font-semibold transition-colors">
-                    {pwSaving ? '…' : 'שמור'}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600/70 hover:bg-emerald-600 disabled:opacity-40 text-white text-sm font-semibold transition-colors">
+                    {pwSaving ? '…' : 'שמור סיסמה'}
                   </button>
                   <button onClick={() => { setPwOpen(false); setNewPw(''); setConfirmPw('') }}
-                    className="px-4 py-2 rounded-lg bg-white/8 text-white/50 text-sm hover:text-white/80 transition-colors">
+                    className="px-5 py-2.5 rounded-xl bg-white/8 text-white/50 text-sm hover:text-white/80 transition-colors">
                     ביטול
                   </button>
                 </div>
@@ -465,99 +478,114 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
           </div>
 
           {/* Favourite team */}
-          <SettingRow label="קבוצה אהובה">
-            <button onClick={() => setTeamPickerOpen(o => !o)}
-              className="flex items-center gap-1.5 bg-white/8 hover:bg-white/12 px-3 py-1.5 rounded-lg text-sm transition-colors">
-              {favTeam ? (
-                <><span>{getFlagEmoji(favTeam.flag_code)}</span><span className="text-white/80">{favTeam.name}</span></>
-              ) : (
-                <span className="text-white/40 text-xs">בחר…</span>
-              )}
-              <span className="text-white/25 text-xs mr-1">{teamPickerOpen ? '▲' : '▼'}</span>
-            </button>
-          </SettingRow>
-
-          {teamPickerOpen && (
-            <div className="py-3 space-y-2">
-              <input autoFocus placeholder="חפש קבוצה…" value={teamSearch}
-                onChange={e => setTeamSearch(e.target.value)}
-                className="glass-input py-2 px-3 text-sm w-full" />
-              <div className="grid grid-cols-2 gap-1 max-h-52 overflow-y-auto no-scrollbar">
-                {filteredTeams.map(t => (
-                  <button key={t.id}
-                    onClick={() => { patchProfile({ favorite_team_id: t.id }); setTeamPickerOpen(false); setTeamSearch(''); showToast(`${t.name} נבחרה!`) }}
-                    className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm text-right transition-colors',
-                      profile.favorite_team_id === t.id ? 'bg-indigo-500/30 text-indigo-100' : 'hover:bg-white/10 text-white/70',
-                    )}>
-                    <span className="text-base leading-none">{getFlagEmoji(t.flag_code)}</span>
-                    <span className="truncate">{t.name}</span>
-                  </button>
-                ))}
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white/40 mb-0.5">קבוצה אהובה</p>
+                {favTeam ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{getFlagEmoji(favTeam.flag_code)}</span>
+                    <span className="text-sm font-semibold text-white">{favTeam.name}</span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-white/30 italic">לא נבחרה</p>
+                )}
               </div>
-              {profile.favorite_team_id && (
-                <button onClick={() => { patchProfile({ favorite_team_id: null }); setTeamPickerOpen(false) }}
-                  className="text-xs text-white/30 hover:text-red-400 transition-colors pt-1">
-                  הסר קבוצה
-                </button>
-              )}
+              <button onClick={() => setTeamPickerOpen(o => !o)}
+                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/18 text-white/70 hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0">
+                ⚽ {teamPickerOpen ? 'סגור' : 'בחר'}
+              </button>
             </div>
-          )}
+            {teamPickerOpen && (
+              <div className="mt-3 space-y-2">
+                <input autoFocus placeholder="חפש קבוצה…" value={teamSearch}
+                  onChange={e => setTeamSearch(e.target.value)}
+                  className="glass-input py-2 px-3 text-sm w-full" />
+                <div className="grid grid-cols-2 gap-1 max-h-52 overflow-y-auto no-scrollbar">
+                  {filteredTeams.map(t => (
+                    <button key={t.id}
+                      onClick={() => { patchProfile({ favorite_team_id: t.id }); setTeamPickerOpen(false); setTeamSearch(''); showToast(`${t.name} נבחרה!`) }}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors',
+                        profile.favorite_team_id === t.id
+                          ? 'bg-indigo-500/30 text-indigo-100 ring-1 ring-indigo-400/30'
+                          : 'hover:bg-white/10 text-white/70',
+                      )}>
+                      <span className="text-lg leading-none">{getFlagEmoji(t.flag_code)}</span>
+                      <span className="truncate">{t.name}</span>
+                    </button>
+                  ))}
+                </div>
+                {profile.favorite_team_id && (
+                  <button onClick={() => { patchProfile({ favorite_team_id: null }); setTeamPickerOpen(false) }}
+                    className="text-xs text-white/30 hover:text-red-400 transition-colors">
+                    הסר קבוצה
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Whistle toggle */}
-          <SettingRow label="🔔 שריקה בשמירה">
-            <span className="text-xs text-white/30 ml-2">נגן צליל כששומרים ניחושים</span>
+          <div className="flex items-center gap-3 px-5 py-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white/80">🔔 שריקה בשמירה</p>
+              <p className="text-xs text-white/35 mt-0.5">נגן צליל כששומרים ניחושים</p>
+            </div>
             <button
               onClick={() => patchProfile({ notifications_whistle: !profile.notifications_whistle })}
               className={cn(
-                'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
+                'relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0',
                 profile.notifications_whistle ? 'bg-indigo-500' : 'bg-white/20',
               )}
             >
               <span className={cn(
                 'absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200',
-                profile.notifications_whistle ? 'translate-x-6' : 'translate-x-1',
+                profile.notifications_whistle ? 'translate-x-7' : 'translate-x-1',
               )} />
             </button>
-          </SettingRow>
+          </div>
         </div>
       </div>
 
       {/* ── Danger zone ───────────────────────────────────────── */}
-      <div className="glass rounded-2xl p-5 border border-red-500/15">
-        <h2 className="text-xs font-bold text-red-400/60 uppercase tracking-widest mb-4">אזור מסוכן</h2>
-
-        {!deleteConfirm ? (
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-white/60">מחיקת חשבון</p>
-              <p className="text-xs text-white/30 mt-0.5">מוחק פרופיל וכל הניחושים לצמיתות</p>
-            </div>
-            <button onClick={() => setDeleteConfirm(true)}
-              className="px-4 py-2 rounded-lg border border-red-500/35 text-red-400 text-sm hover:bg-red-500/12 transition-colors shrink-0">
-              מחיקה…
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-red-300">
-              הקלד <span className="font-mono font-bold bg-red-500/20 px-1.5 py-0.5 rounded">DELETE</span> לאישור. לא ניתן לביטול.
-            </p>
-            <input autoFocus value={deleteInput} onChange={e => setDeleteInput(e.target.value)}
-              placeholder="DELETE" className="glass-input py-2 px-3 text-sm font-mono w-full" />
-            <div className="flex gap-2">
-              <button onClick={handleDelete}
-                disabled={deleteInput !== 'DELETE' || deleting}
-                className="flex-1 py-2.5 rounded-lg bg-red-600/70 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
-                {deleting ? 'מוחק…' : 'מחיקה לצמיתות'}
-              </button>
-              <button onClick={() => { setDeleteConfirm(false); setDeleteInput('') }}
-                className="px-4 py-2.5 rounded-lg bg-white/8 text-white/60 text-sm hover:text-white/80 transition-colors">
-                ביטול
+      <div className="glass rounded-2xl overflow-hidden border border-red-500/15">
+        <div className="px-5 pt-5 pb-3 border-b border-red-500/10">
+          <h2 className="text-sm font-bold text-red-400/70 uppercase tracking-widest">אזור מסוכן</h2>
+        </div>
+        <div className="px-5 py-4">
+          {!deleteConfirm ? (
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-white/70">מחיקת חשבון</p>
+                <p className="text-xs text-white/30 mt-0.5">מוחק פרופיל וכל הניחושים לצמיתות</p>
+              </div>
+              <button onClick={() => setDeleteConfirm(true)}
+                className="flex items-center gap-1.5 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-semibold transition-colors shrink-0">
+                🗑 מחק
               </button>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-red-300">
+                הקלד <span className="font-mono font-bold bg-red-500/20 px-1.5 py-0.5 rounded">DELETE</span> לאישור. לא ניתן לביטול.
+              </p>
+              <input autoFocus value={deleteInput} onChange={e => setDeleteInput(e.target.value)}
+                placeholder="DELETE" className="glass-input py-2.5 px-4 text-sm font-mono w-full" />
+              <div className="flex gap-2">
+                <button onClick={handleDelete}
+                  disabled={deleteInput !== 'DELETE' || deleting}
+                  className="flex-1 py-2.5 rounded-xl bg-red-600/70 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
+                  {deleting ? 'מוחק…' : 'מחיקה לצמיתות'}
+                </button>
+                <button onClick={() => { setDeleteConfirm(false); setDeleteInput('') }}
+                  className="px-5 py-2.5 rounded-xl bg-white/8 text-white/50 text-sm hover:text-white/80 transition-colors">
+                  ביטול
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
