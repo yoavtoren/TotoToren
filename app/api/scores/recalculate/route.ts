@@ -123,12 +123,14 @@ export async function POST(request: NextRequest) {
       groupMatchPts += pts
     }
 
-    // 6.2 Group standings (+3 per correct position)
+    // 6.2 Group standings — only scored after group stage is officially done
     let groupStandingPts = 0
-    for (const g of [...new Set(userGP.map((r: any) => r.group_letter as string))]) {
-      const predOrder = userGP.filter((r: any) => r.group_letter === g).sort((a: any, b: any) => a.predicted_position - b.predicted_position).map((r: any) => r.team_id as number)
-      const realOrder = realGroupStandings[g]
-      if (realOrder?.length) groupStandingPts += scoreGroupStandings(predOrder, realOrder)
+    if (groupStageComplete) {
+      for (const g of [...new Set(userGP.map((r: any) => r.group_letter as string))]) {
+        const predOrder = userGP.filter((r: any) => r.group_letter === g).sort((a: any, b: any) => a.predicted_position - b.predicted_position).map((r: any) => r.team_id as number)
+        const realOrder = realGroupStandings[g]
+        if (realOrder?.length) groupStandingPts += scoreGroupStandings(predOrder, realOrder)
+      }
     }
 
     // 6.3 Advancement
