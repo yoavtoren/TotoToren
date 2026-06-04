@@ -337,6 +337,17 @@ export default function AdminClient({
           <span style={{ marginRight: 12, fontSize: 13, color: '#a0aec0' }}>TotoToren · {total} משחקים</span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={async () => {
+              showToast('מחשב ניקוד…')
+              const res = await fetch('/api/scores/recalculate', { method: 'POST', headers: authHeaders })
+              const d = await res.json()
+              if (res.ok) showToast(`✓ ${d.message ?? 'ניקוד עודכן'}`)
+              else showToast(`שגיאה: ${d.error}`, false)
+            }}
+            style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: '#276749', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
+            💾 חשב ניקוד מחדש
+          </button>
           <button onClick={handleSync} disabled={syncing}
             style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #4a5568', background: 'transparent', color: '#e2e8f0', cursor: syncing ? 'not-allowed' : 'pointer', fontSize: 13 }}>
             {syncing ? 'מסנכרן…' : '🔄 סנכרן לוח'}
