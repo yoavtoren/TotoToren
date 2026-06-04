@@ -58,7 +58,7 @@ export default function HomePage() {
             priority
           />
           <p className="text-lg sm:text-xl text-white/65 max-w-xl mx-auto leading-relaxed">
-            איזה מונדיאל קיבלנו איזה מונדיאל ואיך אנחנו לא שם כמה חבל איזה מונדיאל יא אללה איזה מונדיאל איך גם אנחנו לא שם וואללה חבל &quot;ואלה שמות 2006&quot;
+            איזה מונדיאל קיבלנו איזה מונדיאל ואיך אנחנו לא שם כמה חבל איזה מונדיאל יא אללה איזה מונדיאל איך גם אנחנו לא שם וואללה חבל
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <Link href="/predict" className="glass-btn-primary px-8 py-3.5 rounded-2xl text-base font-semibold glow-green">
