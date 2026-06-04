@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import LeaderboardClient from '@/components/leaderboard/LeaderboardClient'
 
-export const revalidate = 60
+export const revalidate = 10
 
 export default async function LeaderboardPage() {
   const supabase = createAdminClient()
