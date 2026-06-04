@@ -15,10 +15,10 @@ interface GroupCardProps {
 // Position 2: possible 3rd-place qualifier (amber)
 // Position 3: eliminated (rose/red)
 const POSITION_CONFIG = [
-  { badge: '🥇', bg: 'bg-emerald-500/15', border: 'border-emerald-400/25', text: 'text-emerald-200', label: 'עולה', labelColor: 'text-emerald-400/60' },
-  { badge: '🥈', bg: 'bg-emerald-500/10', border: 'border-emerald-400/18', text: 'text-emerald-100/80', label: 'עולה', labelColor: 'text-emerald-400/50' },
-  { badge: '🥉', bg: 'bg-amber-500/12',   border: 'border-amber-400/25',   text: 'text-amber-100/80',   label: '3rd?',  labelColor: 'text-amber-400/60' },
-  { badge: '4️⃣', bg: 'bg-rose-500/8',    border: 'border-rose-400/18',    text: 'text-white/50',       label: 'יוצא',  labelColor: 'text-rose-400/50' },
+  { badge: '🥇', bg: 'bg-emerald-500/15', text: 'text-emerald-200',   label: 'עולה', labelColor: 'text-emerald-400/60' },
+  { badge: '🥈', bg: 'bg-emerald-500/10', text: 'text-emerald-100/80', label: 'עולה', labelColor: 'text-emerald-400/50' },
+  { badge: '🥉', bg: 'bg-amber-500/12',   text: 'text-amber-100/80',   label: '3rd?', labelColor: 'text-amber-400/60' },
+  { badge: '4️⃣', bg: 'bg-rose-500/8',    text: 'text-white/50',       label: 'עף',   labelColor: 'text-rose-400/50' },
 ]
 
 export default function GroupCard({ groupLetter, teamIds, onReorder, disabled }: GroupCardProps) {
@@ -44,8 +44,8 @@ export default function GroupCard({ groupLetter, teamIds, onReorder, disabled }:
             <div
               key={teamId}
               className={cn(
-                'flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all',
-                cfg.bg, cfg.border
+                'flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-all',
+                cfg.bg
               )}
             >
               <span className="text-base w-5 text-center shrink-0 leading-none">{cfg.badge}</span>
@@ -81,7 +81,7 @@ export default function GroupCard({ groupLetter, teamIds, onReorder, disabled }:
       <div className="flex items-center gap-3 pt-0.5 flex-wrap">
         <span className="flex items-center gap-1 text-[9px] text-emerald-400/50"><span className="w-2 h-2 rounded-sm bg-emerald-500/40 shrink-0" />עולה</span>
         <span className="flex items-center gap-1 text-[9px] text-amber-400/50"><span className="w-2 h-2 rounded-sm bg-amber-500/40 shrink-0" />אולי עולה</span>
-        <span className="flex items-center gap-1 text-[9px] text-rose-400/50"><span className="w-2 h-2 rounded-sm bg-rose-500/30 shrink-0" />יוצא</span>
+        <span className="flex items-center gap-1 text-[9px] text-rose-400/50"><span className="w-2 h-2 rounded-sm bg-rose-500/30 shrink-0" />עף</span>
       </div>
     </GlassCard>
   )
