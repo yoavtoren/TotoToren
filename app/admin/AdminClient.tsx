@@ -91,7 +91,11 @@ export default function AdminClient({
     const calcData = await calcRes.json()
     setSavedIds(prev => new Set([...prev, matchId]))
     setSaving(null)
-    showToast(`נשמר ✓  ${calcData.message ?? ''}`)
+    if (!calcRes.ok) {
+      showToast(`נשמר ✓ אבל חישוב ניקוד נכשל: ${calcData.error ?? calcRes.status}`, false)
+    } else {
+      showToast(`נשמר ✓  ${calcData.message ?? ''}`)
+    }
   }
 
   function setScore(id: number, side: 'home' | 'away', val: string) {
