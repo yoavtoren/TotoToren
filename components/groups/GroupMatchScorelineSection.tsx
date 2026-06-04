@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { GROUP_LETTERS } from '@/lib/constants'
 import { GROUP_MATCHES_BY_GROUP } from '@/data/match-schedule'
 import { getTeamIdByName, getFlagEmoji, getTeamById } from '@/data/teams'
@@ -25,16 +25,18 @@ const ALL_INPUT_KEYS: string[] = GROUP_LETTERS.flatMap(g =>
   (GROUP_MATCHES_BY_GROUP[g] ?? []).flatMap(m => [`${m.match}-home`, `${m.match}-away`])
 )
 
+const ALL_TOTAL_KEYS: string[] = GROUP_LETTERS.flatMap(g =>
+  (GROUP_MATCHES_BY_GROUP[g] ?? []).map(m => `${m.match}-total`)
+)
+
 export default function GroupMatchScorelineSection({
   scores, onScoreChange, disabled,
 }: GroupMatchScorelineSectionProps) {
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(['A']))
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const focusNext = (currentKey: string) => {
-    const idx = ALL_INPUT_KEYS.indexOf(currentKey)
-    const nextKey = ALL_INPUT_KEYS[idx + 1]
-    if (!nextKey) return
+  const focusKey = (nextKey: string) => {
     const nextMatchId = parseInt(nextKey.split('-')[0])
     for (const g of GROUP_LETTERS) {
       if ((GROUP_MATCHES_BY_GROUP[g] ?? []).some(m => m.match === nextMatchId)) {
@@ -46,6 +48,18 @@ export default function GroupMatchScorelineSection({
       const el = inputRefs.current.get(nextKey)
       el?.focus(); el?.select()
     }, 50)
+  }
+
+  const focusNext = (currentKey: string) => {
+    const idx = ALL_INPUT_KEYS.indexOf(currentKey)
+    const nextKey = ALL_INPUT_KEYS[idx + 1]
+    if (nextKey) focusKey(nextKey)
+  }
+
+  const focusNextTotal = (currentKey: string) => {
+    const idx = ALL_TOTAL_KEYS.indexOf(currentKey)
+    const nextKey = ALL_TOTAL_KEYS[idx + 1]
+    if (nextKey) focusKey(nextKey)
   }
 
   // 1X2 is fully independent — only touches 'outcome', never home/away/total
@@ -138,9 +152,19 @@ export default function GroupMatchScorelineSection({
                         <div className="flex items-center gap-1 shrink-0">
                           <span className="text-[9px] text-amber-400/50 whitespace-nowrap font-bold">Σ</span>
                           <input
+                            ref={el => { if (el) inputRefs.current.set(`${match.match}-total`, el) }}
                             type="number" min="0" max="30"
                             value={s?.total ?? ''}
-                            onChange={e => onScoreChange(match.match, 'total', e.target.value)}
+                            onChange={e => {
+                              onScoreChange(match.match, 'total', e.target.value)
+                              const v = e.target.value
+                              if (/^\d$/.test(v)) {
+                                focusNextTotal(`${match.match}-total`)
+                              } else if (v !== '') {
+                                if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current)
+                                autoAdvanceTimer.current = setTimeout(() => focusNextTotal(`${match.match}-total`), 800)
+                              }
+                            }}
                             disabled={disabled}
                             placeholder="–"
                             title="Total goals (+2 pts)"

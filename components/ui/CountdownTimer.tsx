@@ -37,10 +37,10 @@ export default function CountdownTimer() {
   if (!timeLeft) return null
 
   const units = [
-    { label: 'ימים',    value: timeLeft.days },
-    { label: 'שעות',   value: timeLeft.hours },
-    { label: 'דקות',   value: timeLeft.minutes },
     { label: 'שניות',  value: timeLeft.seconds },
+    { label: 'דקות',   value: timeLeft.minutes },
+    { label: 'שעות',   value: timeLeft.hours },
+    { label: 'ימים',   value: timeLeft.days },
   ]
 
   return (
