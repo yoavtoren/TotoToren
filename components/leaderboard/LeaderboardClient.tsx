@@ -77,19 +77,27 @@ function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
 }
 
 // ── Helpers for breakdown counts ──────────────────────────────
-// Possible group-match point values: 0, 1, 2, 3, 6
-// 6 = exact score (always includes outcome+goals)
-// 3 = outcome + goals correct (not exact)
-// 2 = only goals correct
-// 1 = only outcome correct
+// Each entry is { outcome: bool, total: bool, exact: bool, pts: number }
+// (Legacy number-only format also supported for backwards compat)
 
 function matchCounts(breakdown: any) {
-  const vals = Object.values((breakdown as any)?.group_matches ?? {}) as number[]
-  return {
-    outcome: vals.filter(v => v === 1 || v === 3 || v === 6).length,
-    goals:   vals.filter(v => v === 2 || v === 3 || v === 6).length,
-    exact:   vals.filter(v => v === 6).length,
+  const vals = Object.values((breakdown as any)?.group_matches ?? {})
+  let outcome = 0, goals = 0, exact = 0
+  for (const v of vals) {
+    if (typeof v === 'object' && v !== null) {
+      // New format: explicit flags
+      if ((v as any).outcome) outcome++
+      if ((v as any).total)   goals++
+      if ((v as any).exact)   exact++
+    } else {
+      // Legacy number format
+      const n = v as number
+      if (n === 1 || n === 3 || n === 4 || n === 6) outcome++
+      if (n === 2 || n === 3 || n === 5 || n === 6) goals++
+      if (n === 3 || n === 4 || n === 5 || n === 6) exact++
+    }
   }
+  return { outcome, goals, exact }
 }
 
 // ── User Predictions Modal ────────────────────────────────────

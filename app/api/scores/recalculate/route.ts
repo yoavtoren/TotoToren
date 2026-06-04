@@ -106,21 +106,21 @@ export async function POST(request: NextRequest) {
 
     // 6.1 Group match — 1X2 (+1), total goals (+2), exact score (+3) — each independent
     let groupMatchPts = 0
-    const groupMatchBreakdown: Record<number, number> = {}
+    // Store explicit flags per match so the leaderboard can show each category correctly
+    const groupMatchBreakdown: Record<number, { outcome: boolean; total: boolean; exact: boolean; pts: number }> = {}
     for (const [idStr, real] of Object.entries(groupMatchResults)) {
       const matchId = parseInt(idStr)
       const pred = userGM.find((r: any) => r.match_id === matchId)
       if (!pred) continue
-      let pts = 0
       const realOutcome = real.home > real.away ? '1' : real.away > real.home ? '2' : 'X'
-      if (pred.predicted_outcome != null && pred.predicted_outcome === realOutcome)
-        pts += SCORING.GROUP_MATCH_OUTCOME
-      if (pred.predicted_total_goals != null && pred.predicted_total_goals === real.home + real.away)
-        pts += SCORING.GROUP_MATCH_TOTAL_GOALS
-      if (pred.predicted_home != null && pred.predicted_away != null &&
-          pred.predicted_home === real.home && pred.predicted_away === real.away)
-        pts += SCORING.GROUP_MATCH_EXACT
-      if (pts > 0) groupMatchBreakdown[matchId] = pts
+      const outcomeOk = pred.predicted_outcome != null && pred.predicted_outcome === realOutcome
+      const totalOk   = pred.predicted_total_goals != null && pred.predicted_total_goals === real.home + real.away
+      const exactOk   = pred.predicted_home != null && pred.predicted_away != null &&
+                        pred.predicted_home === real.home && pred.predicted_away === real.away
+      const pts = (outcomeOk ? SCORING.GROUP_MATCH_OUTCOME : 0)
+                + (totalOk   ? SCORING.GROUP_MATCH_TOTAL_GOALS : 0)
+                + (exactOk   ? SCORING.GROUP_MATCH_EXACT : 0)
+      groupMatchBreakdown[matchId] = { outcome: outcomeOk, total: totalOk, exact: exactOk, pts }
       groupMatchPts += pts
     }
 
