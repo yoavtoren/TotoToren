@@ -179,7 +179,20 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     message: `Recalculated scores for ${scoreRows.length} users.`,
-    scores: scoreRows.map(r => ({ user_id: r.user_id, total: r.total_score, group_match: r.group_match_points })),
+    debug: {
+      groupMatchesWithResults: Object.keys(groupMatchResults).length,
+      groupStageComplete,
+      r32TeamsCount: realR32Teams.size,
+    },
+    scores: scoreRows.map(r => ({
+      user_id: r.user_id,
+      total: r.total_score,
+      group_match: r.group_match_points,
+      group_standing: r.group_standing_points,
+      advancement: r.advancement_points,
+      ko_score: r.knockout_score_points,
+      futures: r.futures_points,
+    })),
   })
 }
 

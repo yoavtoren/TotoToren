@@ -359,8 +359,11 @@ export default function AdminClient({
               showToast('מחשב ניקוד…')
               const res = await fetch('/api/scores/recalculate', { method: 'POST', headers: authHeaders })
               const d = await res.json()
-              if (res.ok) showToast(`✓ ${d.message ?? 'ניקוד עודכן'}`)
-              else showToast(`שגיאה: ${d.error}`, false)
+              if (res.ok) {
+                const dbg = d.debug
+                const scores = (d.scores ?? []).map((s: any) => `${s.user_id.slice(0,6)}: total=${s.total} (match=${s.group_match} stand=${s.group_standing} adv=${s.advancement})`).join(' | ')
+                showToast(`✓ משחקים=${dbg?.groupMatchesWithResults} שלב-קבוצות=${dbg?.groupStageComplete} | ${scores}`)
+              } else showToast(`שגיאה: ${d.error}`, false)
             }}
             style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: '#276749', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
             💾 חשב ניקוד מחדש
