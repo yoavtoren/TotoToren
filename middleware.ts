@@ -23,16 +23,33 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh the session if expired
+  // Validate session with Supabase server (also refreshes expired tokens)
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /predict and /admin routes
   const path = request.nextUrl.pathname
-  if ((path.startsWith('/predict') || path.startsWith('/admin')) && !user) {
+  const isProtected = path.startsWith('/predict') || path.startsWith('/admin')
+
+  if (isProtected && !user) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/auth/login'
     redirectUrl.searchParams.set('redirectTo', path)
-    return NextResponse.redirect(redirectUrl)
+
+    // If stale auth cookies exist, the user "appears" logged in client-side
+    // but the server can't validate them. Clear cookies + signal the login page.
+    const hasStaleSession = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
+    if (hasStaleSession) {
+      redirectUrl.searchParams.set('expired', '1')
+    }
+
+    const response = NextResponse.redirect(redirectUrl)
+
+    if (hasStaleSession) {
+      request.cookies.getAll()
+        .filter(c => c.name.startsWith('sb-'))
+        .forEach(c => response.cookies.set(c.name, '', { maxAge: 0, path: '/' }))
+    }
+
+    return response
   }
 
   return supabaseResponse

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import GlassCard from '@/components/ui/GlassCard'
@@ -10,8 +10,17 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/profile'
+  const isExpired = searchParams.get('expired') === '1'
 
   const supabase = createClient()
+
+  // If the middleware detected a stale session, sign out client-side so the
+  // nav stops showing the user as logged in and fresh cookies can be set.
+  useEffect(() => {
+    if (isExpired) {
+      supabase.auth.signOut()
+    }
+  }, [isExpired]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
@@ -84,6 +93,13 @@ export default function LoginPage() {
               : 'הצטרפו לחברים והתחילו לנחש'}
           </p>
         </div>
+
+        {/* Expired session notice */}
+        {isExpired && (
+          <div className="bg-amber-500/15 border border-amber-400/30 rounded-xl px-4 py-3 text-sm text-amber-200 text-center">
+            פג תוקף החיבור שלך — אנא התחבר מחדש.
+          </div>
+        )}
 
         {/* Google OAuth */}
         <GlassButton
