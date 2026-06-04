@@ -101,17 +101,22 @@ export async function POST(request: NextRequest) {
 
     // 6.1 Group match — 1X2 (+1), total goals (+2), exact score (+3) — each independent
     let groupMatchPts = 0
+    const groupMatchBreakdown: Record<number, number> = {}
     for (const [idStr, real] of Object.entries(groupMatchResults)) {
-      const pred = userGM.find((r: any) => r.match_id === parseInt(idStr))
+      const matchId = parseInt(idStr)
+      const pred = userGM.find((r: any) => r.match_id === matchId)
       if (!pred) continue
+      let pts = 0
       const realOutcome = real.home > real.away ? '1' : real.away > real.home ? '2' : 'X'
       if (pred.predicted_outcome != null && pred.predicted_outcome === realOutcome)
-        groupMatchPts += SCORING.GROUP_MATCH_OUTCOME
+        pts += SCORING.GROUP_MATCH_OUTCOME
       if (pred.predicted_total_goals != null && pred.predicted_total_goals === real.home + real.away)
-        groupMatchPts += SCORING.GROUP_MATCH_TOTAL_GOALS
+        pts += SCORING.GROUP_MATCH_TOTAL_GOALS
       if (pred.predicted_home != null && pred.predicted_away != null &&
           pred.predicted_home === real.home && pred.predicted_away === real.away)
-        groupMatchPts += SCORING.GROUP_MATCH_EXACT
+        pts += SCORING.GROUP_MATCH_EXACT
+      if (pts > 0) groupMatchBreakdown[matchId] = pts
+      groupMatchPts += pts
     }
 
     // 6.2 Group standings (+3 per correct position)
@@ -156,6 +161,8 @@ export async function POST(request: NextRequest) {
       advancement_points: advancementPts,
       knockout_score_points: koScorePts,
       futures_points: futuresPts,
+      breakdown: { group_matches: groupMatchBreakdown },
+      last_calculated_at: new Date().toISOString(),
     }
   })
 
