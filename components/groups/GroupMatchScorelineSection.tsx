@@ -73,7 +73,7 @@ export default function GroupMatchScorelineSection({
         <h2 className="text-xl font-bold text-shadow">חלק 1 — ניחוש תוצאות שלב הבתים</h2>
         <div className="flex flex-wrap gap-2 mt-1 text-xs">
           <span className="glass px-2 py-1 rounded-lg"><strong className="text-blue-300">1/X/2</strong> <span className="text-white/40">= +1 נק׳</span></span>
-          <span className="glass px-2 py-1 rounded-lg"><strong className="text-amber-300">Σ סך שערים</strong> <span className="text-white/40">= +2 נק׳</span></span>
+          <span className="glass px-2 py-1 rounded-lg"><strong className="text-amber-300">🥅 סך שערים</strong> <span className="text-white/40">= +2 נק׳</span></span>
           <span className="glass px-2 py-1 rounded-lg"><strong className="text-emerald-300">תוצאה מדויקת</strong> <span className="text-white/40">= +3 נק׳</span></span>
           <span className="text-white/30 py-1">כל אחד עצמאי — אפשר לנחש כל שילוב.</span>
         </div>
@@ -159,7 +159,7 @@ export default function GroupMatchScorelineSection({
                         {/* Row 3: Σ total + exact score + winner label */}
                         <div className="flex items-center justify-center gap-3 px-3 py-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-amber-400/60 font-bold">Σ</span>
+                            <span className="text-[9px] text-amber-400/60 font-bold">🥅</span>
                             <input
                               type="number" min="0" max="30"
                               value={s?.total ?? ''}
@@ -261,7 +261,7 @@ export default function GroupMatchScorelineSection({
                         {/* Row 3: Σ total + exact score + winner label */}
                         <div className="flex items-center justify-center gap-3 px-4 py-2.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-amber-400/60 font-bold">Σ</span>
+                            <span className="text-[9px] text-amber-400/60 font-bold">🥅</span>
                             <input
                               ref={el => { if (el) inputRefs.current.set(`${match.match}-total`, el) }}
                               type="number" min="0" max="30"

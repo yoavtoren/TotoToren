@@ -270,7 +270,7 @@ export default function KnockoutBracket({
       <div>
         <h2 className="text-xl font-bold text-shadow">חלק 4 — סבבי הנוקאאוט</h2>
         <div className="flex flex-wrap gap-2 mt-1 text-xs">
-          <span className="glass px-2 py-1 rounded-lg"><strong className="text-amber-300">Σ סך שערים</strong> <span className="text-white/40">= +{SCORING.KO_TOTAL_GOALS} נק׳</span></span>
+          <span className="glass px-2 py-1 rounded-lg"><strong className="text-amber-300">🥅 סך שערים</strong> <span className="text-white/40">= +{SCORING.KO_TOTAL_GOALS} נק׳</span></span>
           <span className="glass px-2 py-1 rounded-lg"><strong className="text-emerald-300">תוצאה מדויקת</strong> <span className="text-white/40">= +{SCORING.KO_EXACT} נק׳</span></span>
           <span className="text-white/30 py-1 text-xs">לחצו על קבוצה לניחוש המנצח</span>
         </div>
