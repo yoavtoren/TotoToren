@@ -132,7 +132,7 @@ function MatchCard({
       <div className="px-1.5 pb-1.5 pt-1 border-t border-white/10 space-y-1">
         {/* Σ total goals */}
         <div className="flex items-center gap-1">
-          <span className="text-[8px] text-amber-400/60 font-bold shrink-0">Σ</span>
+          <span className="text-[10px] shrink-0">⚽</span>
           <input type="number" min="0" max="30" value={totalScore}
             onChange={e => onScoreChange('total', e.target.value)} placeholder="?"
             disabled={disabled}
