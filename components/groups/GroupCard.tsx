@@ -17,7 +17,7 @@ interface GroupCardProps {
 const POSITION_CONFIG = [
   { badge: '🥇', bg: 'bg-emerald-500/15', text: 'text-emerald-200',   label: 'עולה', labelColor: 'text-emerald-400/60' },
   { badge: '🥈', bg: 'bg-emerald-500/10', text: 'text-emerald-100/80', label: 'עולה', labelColor: 'text-emerald-400/50' },
-  { badge: '🥉', bg: 'bg-amber-500/12',   text: 'text-amber-100/80',   label: '3rd?', labelColor: 'text-amber-400/60' },
+  { badge: '🥉', bg: 'bg-amber-500/12',   text: 'text-amber-100/80',   label: 'אולי עולה', labelColor: 'text-amber-400/60' },
   { badge: '4️⃣', bg: 'bg-rose-500/8',    text: 'text-white/50',       label: 'עף',   labelColor: 'text-rose-400/50' },
 ]
 
