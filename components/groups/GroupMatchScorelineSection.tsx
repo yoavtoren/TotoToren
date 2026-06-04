@@ -226,119 +226,122 @@ export default function GroupMatchScorelineSection({
                         </div>
                       </div>
 
-                      {/* ── Desktop layout (unchanged) ────────────── */}
-                      <div dir="ltr" className="hidden sm:flex items-center gap-2 px-4 py-3">
-                        {/* Date */}
-                        <span className="text-[10px] text-white/25 w-14 shrink-0 font-mono">
-                          {new Date(match.kickoff_utc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                        </span>
-
-                        {/* Home team */}
-                        <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-                          <span className="text-sm font-medium text-white truncate">{match.home}</span>
-                          {homeTeam && <span className="text-base shrink-0">{getFlagEmoji(homeTeam.flag_code)}</span>}
+                      {/* ── Desktop layout (card, same as mobile) ── */}
+                      <div dir="ltr" className="hidden sm:block mx-4 my-2 rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+                        {/* Row 1: teams + date */}
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {homeTeam && <span className="text-lg shrink-0">{getFlagEmoji(homeTeam.flag_code)}</span>}
+                            <span className="text-sm font-semibold text-white truncate">{match.home}</span>
+                          </div>
+                          <span className="text-[10px] text-white/25 font-mono shrink-0 px-3">{dateLabel}</span>
+                          <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                            <span className="text-sm font-semibold text-white truncate text-right">{match.away}</span>
+                            {awayTeam && <span className="text-lg shrink-0">{getFlagEmoji(awayTeam.flag_code)}</span>}
+                          </div>
                         </div>
 
-                        {/* 1/X/2 — independent, click again to deselect */}
-                        {(['1','X','2'] as const).map(o => (
-                          <button
-                            key={o}
-                            onClick={() => !disabled && handleOutcomeClick(match.match, o, outcome)}
-                            disabled={disabled}
-                            className={cn(
-                              'w-11 h-10 rounded-lg border text-sm font-bold transition-all shrink-0',
-                              outcome === o
-                                ? OUTCOME_STYLES[o as '1'|'X'|'2']
-                                : 'border-white/15 text-white/30 hover:text-white/70 hover:border-white/30'
-                            )}
-                          >
-                            {o}
-                          </button>
-                        ))}
-
-                        {/* Total goals (+2 pts) */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[9px] text-amber-400/50 whitespace-nowrap font-bold">Σ</span>
-                          <input
-                            ref={el => { if (el) inputRefs.current.set(`${match.match}-total`, el) }}
-                            type="number" min="0" max="30"
-                            value={s?.total ?? ''}
-                            onChange={e => {
-                              onScoreChange(match.match, 'total', e.target.value)
-                              const v = e.target.value
-                              if (/^\d$/.test(v)) {
-                                focusNextTotal(`${match.match}-total`)
-                              } else if (v !== '') {
-                                if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current)
-                                autoAdvanceTimer.current = window.setTimeout(() => focusNextTotal(`${match.match}-total`), 800)
-                              }
-                            }}
-                            disabled={disabled}
-                            placeholder="–"
-                            title="Total goals (+2 pts)"
-                            className={cn(
-                              'glass-input w-10 text-center py-1.5 px-1 text-sm font-mono',
-                              s?.total
-                                ? 'bg-amber-500/25 border border-amber-400/40 text-amber-200'
-                                : 'border border-amber-400/20 text-white/50 hover:border-amber-400/35',
-                            )}
-                          />
+                        {/* Row 2: 1X2 */}
+                        <div className="flex items-center justify-center gap-3 px-4 py-2.5 border-b border-white/10">
+                          {(['1','X','2'] as const).map(o => (
+                            <button
+                              key={o}
+                              onClick={() => !disabled && handleOutcomeClick(match.match, o, outcome)}
+                              disabled={disabled}
+                              className={cn(
+                                'flex-1 h-10 rounded-lg border text-sm font-bold transition-all',
+                                outcome === o
+                                  ? OUTCOME_STYLES[o as '1'|'X'|'2']
+                                  : 'border-white/15 text-white/30 hover:text-white/70 hover:border-white/30'
+                              )}
+                            >{o}</button>
+                          ))}
                         </div>
 
-                        {/* Exact score (+3 pts) */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          <input
-                            ref={el => { if (el) inputRefs.current.set(`${match.match}-home`, el) }}
-                            type="number" min="0" max="20"
-                            value={s?.home ?? ''}
-                            onChange={e => {
-                              onScoreChange(match.match, 'home', e.target.value)
-                              if (/^\d$/.test(e.target.value)) focusNext(`${match.match}-home`)
-                            }}
-                            disabled={disabled}
-                            placeholder="–"
-                            title="Exact score (+3 pts)"
-                            className={cn(
-                              'glass-input w-10 text-center py-1.5 px-1 text-sm font-mono',
-                              s?.home
-                                ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200'
-                                : 'border border-emerald-400/15 text-white/50 hover:border-emerald-400/30',
-                            )}
-                          />
-                          <span className="text-white/30 text-sm font-bold">:</span>
-                          <input
-                            ref={el => { if (el) inputRefs.current.set(`${match.match}-away`, el) }}
-                            type="number" min="0" max="20"
-                            value={s?.away ?? ''}
-                            onChange={e => {
-                              onScoreChange(match.match, 'away', e.target.value)
-                              if (/^\d$/.test(e.target.value)) focusNext(`${match.match}-away`)
-                            }}
-                            disabled={disabled}
-                            placeholder="–"
-                            title="Exact score (+3 pts)"
-                            className={cn(
-                              'glass-input w-10 text-center py-1.5 px-1 text-sm font-mono',
-                              s?.away
-                                ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200'
-                                : 'border border-emerald-400/15 text-white/50 hover:border-emerald-400/30',
-                            )}
-                          />
-                        </div>
-
-                        {/* Clear all */}
-                        {(s?.outcome || s?.home || s?.away || s?.total) && !disabled && (
-                          <button
-                            onClick={() => { onScoreChange(match.match, 'outcome', ''); onScoreChange(match.match, 'home', ''); onScoreChange(match.match, 'away', ''); onScoreChange(match.match, 'total', '') }}
-                            className="text-white/20 hover:text-red-400 text-xs transition-colors shrink-0"
-                            title="Clear score"
-                          >✕</button>
-                        )}
-
-                        {/* Away team */}
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                          {awayTeam && <span className="text-base shrink-0">{getFlagEmoji(awayTeam.flag_code)}</span>}
-                          <span className="text-sm font-medium text-white truncate">{match.away}</span>
+                        {/* Row 3: Σ total + exact score + winner label */}
+                        <div className="flex items-center justify-center gap-3 px-4 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-amber-400/60 font-bold">Σ</span>
+                            <input
+                              ref={el => { if (el) inputRefs.current.set(`${match.match}-total`, el) }}
+                              type="number" min="0" max="30"
+                              value={s?.total ?? ''}
+                              onChange={e => {
+                                onScoreChange(match.match, 'total', e.target.value)
+                                const v = e.target.value
+                                if (/^\d$/.test(v)) {
+                                  focusNextTotal(`${match.match}-total`)
+                                } else if (v !== '') {
+                                  if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current)
+                                  autoAdvanceTimer.current = window.setTimeout(() => focusNextTotal(`${match.match}-total`), 800)
+                                }
+                              }}
+                              disabled={disabled}
+                              placeholder="–"
+                              title="Total goals (+2 pts)"
+                              className={cn(
+                                'glass-input w-12 h-10 text-center px-0 text-sm font-mono',
+                                s?.total ? 'bg-amber-500/25 border border-amber-400/40 text-amber-200' : 'border border-amber-400/20 text-white/50 hover:border-amber-400/35',
+                              )}
+                            />
+                          </div>
+                          <div className="w-px h-5 bg-white/10" />
+                          <div className="flex items-center gap-1">
+                            <input
+                              ref={el => { if (el) inputRefs.current.set(`${match.match}-home`, el) }}
+                              type="number" min="0" max="20"
+                              value={s?.home ?? ''}
+                              onChange={e => {
+                                onScoreChange(match.match, 'home', e.target.value)
+                                if (/^\d$/.test(e.target.value)) focusNext(`${match.match}-home`)
+                              }}
+                              disabled={disabled}
+                              placeholder="–"
+                              title="Exact score (+3 pts)"
+                              className={cn(
+                                'glass-input w-12 h-10 text-center px-0 text-sm font-mono',
+                                s?.home ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50 hover:border-emerald-400/30',
+                              )}
+                            />
+                            <span className="text-white/30 text-sm font-bold">:</span>
+                            <input
+                              ref={el => { if (el) inputRefs.current.set(`${match.match}-away`, el) }}
+                              type="number" min="0" max="20"
+                              value={s?.away ?? ''}
+                              onChange={e => {
+                                onScoreChange(match.match, 'away', e.target.value)
+                                if (/^\d$/.test(e.target.value)) focusNext(`${match.match}-away`)
+                              }}
+                              disabled={disabled}
+                              placeholder="–"
+                              title="Exact score (+3 pts)"
+                              className={cn(
+                                'glass-input w-12 h-10 text-center px-0 text-sm font-mono',
+                                s?.away ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50 hover:border-emerald-400/30',
+                              )}
+                            />
+                          </div>
+                          {(() => {
+                            const h = s?.home !== '' ? Number(s?.home) : null
+                            const a = s?.away !== '' ? Number(s?.away) : null
+                            if (h === null || a === null || s?.home === '' || s?.away === '') return null
+                            const winner = h > a ? match.home : a > h ? match.away : null
+                            return (
+                              <span dir="rtl" className={cn(
+                                'text-[10px] font-semibold flex-1 min-w-0 leading-tight text-center break-words',
+                                winner ? 'text-emerald-300/80' : 'text-white/40',
+                              )}>
+                                {winner ? `ניצחון ל${winner}` : 'תיקו'}
+                              </span>
+                            )
+                          })()}
+                          {hasValues && !disabled && (
+                            <button
+                              onClick={() => { onScoreChange(match.match, 'outcome', ''); onScoreChange(match.match, 'home', ''); onScoreChange(match.match, 'away', ''); onScoreChange(match.match, 'total', '') }}
+                              className="text-white/20 hover:text-red-400 text-xs transition-colors shrink-0"
+                              title="Clear score"
+                            >✕</button>
+                          )}
                         </div>
                       </div>
                       </div>
