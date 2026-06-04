@@ -14,13 +14,17 @@ export default function LoginPage() {
 
   const supabase = createClient()
 
-  // If the middleware detected a stale session, sign out client-side so the
-  // nav stops showing the user as logged in and fresh cookies can be set.
+  // Sync client state with server: whenever the server redirected here (any
+  // redirectTo present), clear stale client session so the navbar stops
+  // showing the user as logged in. Full signOut for expired tokens; local-only
+  // (no network) for the generic case where cookies simply aren't present.
   useEffect(() => {
     if (isExpired) {
       supabase.auth.signOut()
+    } else if (searchParams.has('redirectTo')) {
+      supabase.auth.signOut({ scope: 'local' })
     }
-  }, [isExpired]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
@@ -61,7 +65,7 @@ export default function LoginPage() {
       // Immediately sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) { setError(signInError.message) }
-      else { router.push(redirectTo) }
+      else { window.location.href = redirectTo }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
@@ -72,7 +76,7 @@ export default function LoginPage() {
           setError(error.message)
         }
       } else {
-        router.push(redirectTo)
+        window.location.href = redirectTo
       }
     }
 

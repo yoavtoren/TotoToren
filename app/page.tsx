@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import CountdownTimer from '@/components/ui/CountdownTimer'
 import GlassCard from '@/components/ui/GlassCard'
 
@@ -48,11 +49,16 @@ export default function HomePage() {
             <span>🇺🇸 🇨🇦 🇲🇽</span>
             <span>מונדיאל 2026 — ארה״ב, קנדה, מקסיקו</span>
           </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-shadow leading-none">
-            טוטו-תורן
-          </h1>
+          <Image
+            src="/logo.png"
+            alt="טוטו-תורן"
+            width={320}
+            height={320}
+            className="mx-auto w-52 sm:w-64 lg:w-80 h-auto object-contain drop-shadow-2xl"
+            priority
+          />
           <p className="text-lg sm:text-xl text-white/65 max-w-xl mx-auto leading-relaxed">
-            נחשו את מונדיאל 2026 עם החברים. בנו את הטבלה שלכם, הוכיחו שידעתם.
+            הטורניר המשפחתי של מונדיאל 2026 והמנצח מקבל הביתה את כל הקופסאות של שישי מממה
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <Link href="/predict" className="glass-btn-primary px-8 py-3.5 rounded-2xl text-base font-semibold glow-green">
