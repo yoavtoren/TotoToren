@@ -75,12 +75,16 @@ export async function POST(request: NextRequest) {
   const scoreRows = profiles.map((p: { id: string }) => {
     const uid = p.id
 
-    // 6.1 Group match scoring
+    // 6.1 Group match scoring — missing predictions default to 0:0 (tie, no goals)
     let groupMatchPts = 0
     const userGMPreds = (allGroupMatchPreds as any[]).filter((r: any) => r.user_id === uid)
-    for (const pred of userGMPreds) {
-      const real = groupMatchResults[pred.match_id]
-      if (real) groupMatchPts += scoreGroupMatch(pred, real)
+    for (const [matchIdStr, real] of Object.entries(groupMatchResults)) {
+      const matchId = parseInt(matchIdStr)
+      const pred = userGMPreds.find((r: any) => r.match_id === matchId)
+      const scorePred = pred
+        ? { home: pred.predicted_home, away: pred.predicted_away }
+        : { home: 0, away: 0 }
+      groupMatchPts += scoreGroupMatch(scorePred, real)
     }
 
     // 6.2 Group standings
