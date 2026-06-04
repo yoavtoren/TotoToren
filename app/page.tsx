@@ -52,9 +52,9 @@ export default function HomePage() {
           <Image
             src="/logo.png"
             alt="טוטו-תורן"
-            width={320}
-            height={320}
-            className="mx-auto w-52 sm:w-64 lg:w-80 h-auto object-contain drop-shadow-2xl"
+            width={280}
+            height={280}
+            className="mx-auto w-44 sm:w-56 lg:w-72 h-auto object-contain drop-shadow-2xl"
             priority
           />
           <p className="text-lg sm:text-xl text-white/65 max-w-xl mx-auto leading-relaxed">
