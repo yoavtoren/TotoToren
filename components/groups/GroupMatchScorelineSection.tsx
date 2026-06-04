@@ -116,10 +116,92 @@ export default function GroupMatchScorelineSection({
                     const homeTeam = getTeamById(getTeamIdByName(match.home) ?? 0)
                     const awayTeam = getTeamById(getTeamIdByName(match.away) ?? 0)
                     const s = scores[match.match]
-                    const outcome = s?.outcome ?? ''  // independent from score
+                    const outcome = s?.outcome ?? ''
+                    const dateLabel = new Date(match.kickoff_utc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                    const hasValues = !!(s?.outcome || s?.home || s?.away || s?.total)
 
                     return (
-                      <div dir="ltr" key={match.match} className="flex items-center gap-2 px-4 py-3">
+                      <div key={match.match}>
+
+                      {/* ── Mobile layout (2 rows) ────────────────── */}
+                      <div dir="ltr" className="sm:hidden px-3 py-3 space-y-2">
+                        {/* Row 1: date + teams */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-white/25 font-mono w-14 shrink-0">{dateLabel}</span>
+                          <div className="flex-1 flex items-center gap-1 min-w-0">
+                            {homeTeam && <span className="text-sm shrink-0">{getFlagEmoji(homeTeam.flag_code)}</span>}
+                            <span className="text-xs font-medium text-white truncate flex-1">{match.home}</span>
+                            <span className="text-white/20 text-[10px] shrink-0 px-0.5">–</span>
+                            <span className="text-xs font-medium text-white truncate flex-1 text-right">{match.away}</span>
+                            {awayTeam && <span className="text-sm shrink-0">{getFlagEmoji(awayTeam.flag_code)}</span>}
+                          </div>
+                        </div>
+                        {/* Row 2: controls */}
+                        <div className="flex items-center gap-1.5 pl-14">
+                          {(['1','X','2'] as const).map(o => (
+                            <button
+                              key={o}
+                              onClick={() => !disabled && handleOutcomeClick(match.match, o, outcome)}
+                              disabled={disabled}
+                              className={cn(
+                                'w-10 h-10 rounded-lg border text-sm font-bold transition-all shrink-0',
+                                outcome === o
+                                  ? OUTCOME_STYLES[o as '1'|'X'|'2']
+                                  : 'border-white/15 text-white/30 active:bg-white/10'
+                              )}
+                            >{o}</button>
+                          ))}
+                          <span className="text-[9px] text-amber-400/50 font-bold ml-1">Σ</span>
+                          <input
+                            type="number" min="0" max="30"
+                            value={s?.total ?? ''}
+                            onChange={e => onScoreChange(match.match, 'total', e.target.value)}
+                            disabled={disabled}
+                            placeholder="–"
+                            className={cn(
+                              'glass-input w-10 h-10 text-center px-0 text-sm font-mono',
+                              s?.total ? 'bg-amber-500/25 border border-amber-400/40 text-amber-200' : 'border border-amber-400/20 text-white/50',
+                            )}
+                          />
+                          <input
+                            type="number" min="0" max="20"
+                            value={s?.home ?? ''}
+                            onChange={e => onScoreChange(match.match, 'home', e.target.value)}
+                            disabled={disabled}
+                            placeholder="–"
+                            className={cn(
+                              'glass-input w-10 h-10 text-center px-0 text-sm font-mono ml-1',
+                              s?.home ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50',
+                            )}
+                          />
+                          <span className="text-white/30 text-sm font-bold">:</span>
+                          <input
+                            type="number" min="0" max="20"
+                            value={s?.away ?? ''}
+                            onChange={e => onScoreChange(match.match, 'away', e.target.value)}
+                            disabled={disabled}
+                            placeholder="–"
+                            className={cn(
+                              'glass-input w-10 h-10 text-center px-0 text-sm font-mono',
+                              s?.away ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-200' : 'border border-emerald-400/15 text-white/50',
+                            )}
+                          />
+                          {hasValues && !disabled && (
+                            <button
+                              onClick={() => {
+                                onScoreChange(match.match, 'outcome', '')
+                                onScoreChange(match.match, 'home', '')
+                                onScoreChange(match.match, 'away', '')
+                                onScoreChange(match.match, 'total', '')
+                              }}
+                              className="text-white/20 hover:text-red-400 text-xs transition-colors shrink-0 ml-1"
+                            >✕</button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── Desktop layout (unchanged) ────────────── */}
+                      <div dir="ltr" className="hidden sm:flex items-center gap-2 px-4 py-3">
                         {/* Date */}
                         <span className="text-[10px] text-white/25 w-14 shrink-0 font-mono">
                           {new Date(match.kickoff_utc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
@@ -233,6 +315,7 @@ export default function GroupMatchScorelineSection({
                           <span className="text-sm font-medium text-white truncate">{match.away}</span>
                         </div>
                       </div>
+                      </div> {/* end wrapper div */}
                     )
                   })}
                 </div>
