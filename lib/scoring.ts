@@ -85,7 +85,10 @@ export function scoreAdvancement(
 export function scoreKnockoutMatch(predicted: Score2, real: Score2): number {
   let pts = 0
   if (predicted.home + predicted.away === real.home + real.away) pts += SCORING.KO_TOTAL_GOALS
-  if (predicted.home === real.home && predicted.away === real.away) pts += SCORING.KO_EXACT
+  // side-irrelevant: {2,1} matches real {2,1} or {1,2}
+  const pMin = Math.min(predicted.home, predicted.away), pMax = Math.max(predicted.home, predicted.away)
+  const rMin = Math.min(real.home, real.away),           rMax = Math.max(real.home, real.away)
+  if (pMin === rMin && pMax === rMax) pts += SCORING.KO_EXACT
   return pts
 }
 

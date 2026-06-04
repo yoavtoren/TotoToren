@@ -129,21 +129,17 @@ function MatchCard({
         <TeamRow teamId={awayId} />
       </div>
       {/* Score inputs — always visible */}
-      {canPick ? (
-        <div className="px-1.5 pb-1 flex items-center gap-1 pt-0.5 border-t border-white/5">
-          <input type="number" min="0" max="20" value={homeScore}
-            onChange={e => onScoreChange('home', e.target.value)} placeholder="–"
-            className="glass-input text-center py-0.5 text-[11px] w-full" />
-          <span className="text-white/30 text-[10px] shrink-0">:</span>
-          <input type="number" min="0" max="20" value={awayScore}
-            onChange={e => onScoreChange('away', e.target.value)} placeholder="–"
-            className="glass-input text-center py-0.5 text-[11px] w-full" />
-        </div>
-      ) : (
-        <div className="px-1.5 pb-1 flex items-center justify-center pt-0.5 border-t border-white/5">
-          <span className="text-[9px] text-white/15 font-mono">— : —</span>
-        </div>
-      )}
+      <div className="px-1.5 pb-1 flex items-center gap-1 pt-0.5 border-t border-white/5">
+        <input type="number" min="0" max="20" value={homeScore}
+          onChange={e => onScoreChange('home', e.target.value)} placeholder="–"
+          disabled={disabled}
+          className="glass-input text-center py-0.5 text-[11px] w-full" />
+        <span className="text-white/30 text-[10px] shrink-0">:</span>
+        <input type="number" min="0" max="20" value={awayScore}
+          onChange={e => onScoreChange('away', e.target.value)} placeholder="–"
+          disabled={disabled}
+          className="glass-input text-center py-0.5 text-[11px] w-full" />
+      </div>
     </div>
   )
 }
