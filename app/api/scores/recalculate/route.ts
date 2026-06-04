@@ -59,9 +59,10 @@ export async function POST(request: NextRequest) {
   }
   for (const r of (thirdRows ?? []) as any[]) r32Teams.add(r.team_id)
 
-  // ADV_R32 only fires when the admin has officially closed the group stage
-  // by saving all 8 third-place qualifiers — until then scores are 0 for advancement
-  const groupStageComplete = (thirdRows ?? []).length === 8
+  // Group stage is complete only when all 72 group matches have actual results.
+  // This prevents test/partial standings data from awarding advancement/standing pts early.
+  const groupMatchCount = Object.keys(groupMatchResults).length
+  const groupStageComplete = groupMatchCount === 72
   const realR32Teams = groupStageComplete ? r32Teams : new Set<number>()
   const stageQual: Record<string, Set<number>> = { r16: new Set(), qf: new Set(), sf: new Set(), final: new Set() }
   for (const r of (stageRows ?? []) as any[]) { if (stageQual[r.stage]) stageQual[r.stage].add(r.team_id) }
