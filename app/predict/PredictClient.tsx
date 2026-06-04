@@ -12,6 +12,7 @@ import BetProgress from '@/components/ui/BetProgress'
 import GlassButton from '@/components/ui/GlassButton'
 import GlassCard from '@/components/ui/GlassCard'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 import { GROUP_LETTERS } from '@/lib/constants'
 import type {
   GroupPrediction, KnockoutPrediction, ThirdPlaceSelection,
@@ -87,6 +88,33 @@ function buildInitial(
   return { groupOrder, groupMatchScores, thirdPlace, bracketWinners, knockoutScores, futures: futuresState }
 }
 
+// ── Section completion wrapper ────────────────────────────────
+function SectionWrapper({ filled, total, children }: {
+  filled: number; total: number; children: React.ReactNode
+}) {
+  const done = filled === total
+  const pct  = total > 0 ? Math.round((filled / total) * 100) : 0
+  return (
+    <div className={cn(
+      'relative rounded-2xl transition-all',
+      !done && 'ring-1 ring-amber-500/20',
+    )}>
+      {children}
+      {/* Completion badge — top-left corner */}
+      <div className={cn(
+        'absolute top-0 left-0 flex items-center gap-1.5 px-2.5 py-1 rounded-br-xl rounded-tl-2xl text-[11px] font-semibold',
+        done
+          ? 'bg-emerald-500/20 text-emerald-300'
+          : 'bg-amber-500/15 text-amber-400',
+      )}>
+        {done ? '✓' : '⚠'}
+        <span>{filled}/{total}</span>
+        {!done && <span className="text-white/30 font-normal">— חסר {total - filled}</span>}
+      </div>
+    </div>
+  )
+}
+
 export default function PredictClient({
   userId, existingGroupPredictions, existingGroupMatchPreds, existingThirdPlace,
   existingKnockoutPredictions, existingFutures, isLocked,
@@ -125,6 +153,10 @@ export default function PredictClient({
     const supabase = createClient()
 
     try {
+      // Ensure profile row exists (guards against FK error if trigger didn't fire)
+      await supabase.from('profiles')
+        .upsert({ id: userId, display_name: '' }, { onConflict: 'id', ignoreDuplicates: true })
+
       // Part 2 — group standings
       const groupRows = GROUP_LETTERS.flatMap((g) =>
         (groupOrder[g] ?? []).map((teamId, index) => ({
@@ -242,37 +274,47 @@ export default function PredictClient({
       <BetProgress stats={completionStats} />
 
       {/* Part 1 */}
-      <GroupMatchScorelineSection
-        scores={groupMatchScores}
-        onScoreChange={setGroupMatchScore}
-        disabled={isLocked}
-      />
+      <SectionWrapper filled={completionStats.groupMatches.filled} total={completionStats.groupMatches.total}>
+        <GroupMatchScorelineSection
+          scores={groupMatchScores}
+          onScoreChange={setGroupMatchScore}
+          disabled={isLocked}
+        />
+      </SectionWrapper>
 
       {/* Part 2 */}
-      <GroupStageSection groupOrder={groupOrder} onReorder={reorderGroup} disabled={isLocked} />
+      <SectionWrapper filled={completionStats.groupStandings.filled} total={completionStats.groupStandings.total}>
+        <GroupStageSection groupOrder={groupOrder} onReorder={reorderGroup} disabled={isLocked} />
+      </SectionWrapper>
 
       {/* Part 3 */}
-      <ThirdPlacePicker
-        available3rdPlaceTeams={available3rdPlaceTeams}
-        assigned={thirdPlace}
-        assignedIds={assigned3rdTeamIds}
-        onAssign={setThirdPlaceTeam}
-        disabled={isLocked}
-      />
+      <SectionWrapper filled={completionStats.thirdPlace.filled} total={completionStats.thirdPlace.total}>
+        <ThirdPlacePicker
+          available3rdPlaceTeams={available3rdPlaceTeams}
+          assigned={thirdPlace}
+          assignedIds={assigned3rdTeamIds}
+          onAssign={setThirdPlaceTeam}
+          disabled={isLocked}
+        />
+      </SectionWrapper>
 
       {/* Part 4 */}
-      <KnockoutBracket
-        groupOrder={groupOrder}
-        thirdPlace={thirdPlace}
-        bracketWinners={bracketWinners}
-        knockoutScores={knockoutScores}
-        onPickWinner={setBracketWinner}
-        onScoreChange={setKnockoutScore}
-        disabled={isLocked}
-      />
+      <SectionWrapper filled={completionStats.knockout.filled} total={completionStats.knockout.total}>
+        <KnockoutBracket
+          groupOrder={groupOrder}
+          thirdPlace={thirdPlace}
+          bracketWinners={bracketWinners}
+          knockoutScores={knockoutScores}
+          onPickWinner={setBracketWinner}
+          onScoreChange={setKnockoutScore}
+          disabled={isLocked}
+        />
+      </SectionWrapper>
 
       {/* Part 5 */}
-      <FuturesBetsSection futures={futures} onSet={setFuture} disabled={isLocked} />
+      <SectionWrapper filled={completionStats.futures.filled} total={completionStats.futures.total}>
+        <FuturesBetsSection futures={futures} onSet={setFuture} disabled={isLocked} />
+      </SectionWrapper>
 
       {/* Sticky mobile save */}
       {!isLocked && (
