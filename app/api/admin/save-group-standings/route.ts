@@ -12,7 +12,9 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
   // Delete existing standings for this group
-  await admin.from('group_actual_standings').delete().eq('group_letter', group_letter)
+  const { error: deleteError } = await admin
+    .from('group_actual_standings').delete().eq('group_letter', group_letter)
+  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 })
 
   const rows = (team_ids as number[]).map((team_id, i) => ({
     group_letter,

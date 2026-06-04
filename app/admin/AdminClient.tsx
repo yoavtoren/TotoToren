@@ -238,14 +238,20 @@ export default function AdminClient({
 
   async function handleSaveStanding(g: string, overrideIds?: number[]) {
     setSavingStanding(g)
+    const ids = overrideIds ?? standings[g] ?? [0,0,0,0]
     const res = await fetch('/api/admin/save-group-standings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ group_letter: g, team_ids: overrideIds ?? standings[g] ?? [0,0,0,0] }),
+      body: JSON.stringify({ group_letter: g, team_ids: ids }),
     })
+    const data = await res.json()
     setSavingStanding(null)
-    if (res.ok) showToast(`בית ${g} נשמר ✓`)
-    else showToast((await res.json()).error, false)
+    if (!res.ok) {
+      showToast(`שגיאה בשמירת בית ${g}: ${data.error}`, false)
+      return
+    }
+    const isReset = ids.every((id: number) => !id)
+    showToast(isReset ? `בית ${g} אופס ✓` : `בית ${g} נשמר ✓`)
   }
 
   async function handleSaveQualifiers() {
