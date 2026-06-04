@@ -16,7 +16,7 @@ const KO_DATE: Record<number, string> = Object.fromEntries(
 )
 
 // ─── Layout constants ──────────────────────────────────────────────────────────
-const CH     = 88             // card height (px) — teams + score row with label
+const CH     = 96             // card height (px) — teams + Σ row + exact score row
 const CW     = 116            // card width (px)
 const CGAP   = 16             // horizontal gap between columns (connector space)
 const SGAP   = 40             // vertical gap between sibling cards in same round
@@ -63,15 +63,15 @@ interface MatchCardProps {
   matchNum: number
   date?: string
   homeId: number | null; awayId: number | null; winnerId: number | null
-  homeScore: string; awayScore: string
+  homeScore: string; awayScore: string; totalScore: string
   onPickWinner: (id: number | null) => void
-  onScoreChange: (side: 'home' | 'away', val: string) => void
+  onScoreChange: (side: 'home' | 'away' | 'total', val: string) => void
   disabled?: boolean
   highlight?: boolean
 }
 
 function MatchCard({
-  matchNum, date, homeId, awayId, winnerId, homeScore, awayScore,
+  matchNum, date, homeId, awayId, winnerId, homeScore, awayScore, totalScore,
   onPickWinner, onScoreChange, disabled, highlight,
 }: MatchCardProps) {
   const canPick = !disabled && homeId !== null && awayId !== null
@@ -129,27 +129,40 @@ function MatchCard({
         <TeamRow teamId={awayId} />
       </div>
       {/* Score inputs */}
-      <div className="px-1.5 pb-1.5 pt-1 border-t border-white/10 space-y-0.5">
-        <p className="text-[8px] text-emerald-400/50 font-semibold text-center tracking-wide uppercase">תוצאה</p>
+      <div className="px-1.5 pb-1.5 pt-1 border-t border-white/10 space-y-1">
+        {/* Σ total goals */}
         <div className="flex items-center gap-1">
+          <span className="text-[8px] text-amber-400/60 font-bold shrink-0">Σ</span>
+          <input type="number" min="0" max="30" value={totalScore}
+            onChange={e => onScoreChange('total', e.target.value)} placeholder="?"
+            disabled={disabled}
+            className={cn(
+              'w-full text-center py-0.5 text-[10px] font-mono rounded border outline-none',
+              totalScore
+                ? 'border-amber-400/50 bg-amber-500/15 text-amber-200'
+                : 'border-white/15 bg-white/5 text-white/50 hover:border-white/30',
+            )} />
+        </div>
+        {/* Exact score */}
+        <div className="flex items-center gap-0.5">
           <input type="number" min="0" max="20" value={homeScore}
             onChange={e => onScoreChange('home', e.target.value)} placeholder="?"
             disabled={disabled}
             className={cn(
-              'w-full text-center py-0.5 text-[11px] font-mono rounded border outline-none bg-white/8 text-white/80',
+              'w-full text-center py-0.5 text-[10px] font-mono rounded border outline-none',
               homeScore
                 ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-200'
-                : 'border-white/20 hover:border-white/35 focus:border-emerald-400/50',
+                : 'border-white/15 bg-white/5 text-white/50 hover:border-white/30',
             )} />
-          <span className="text-white/40 text-[10px] font-bold shrink-0">:</span>
+          <span className="text-white/30 text-[9px] font-bold shrink-0">:</span>
           <input type="number" min="0" max="20" value={awayScore}
             onChange={e => onScoreChange('away', e.target.value)} placeholder="?"
             disabled={disabled}
             className={cn(
-              'w-full text-center py-0.5 text-[11px] font-mono rounded border outline-none bg-white/8 text-white/80',
+              'w-full text-center py-0.5 text-[10px] font-mono rounded border outline-none',
               awayScore
                 ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-200'
-                : 'border-white/20 hover:border-white/35 focus:border-emerald-400/50',
+                : 'border-white/15 bg-white/5 text-white/50 hover:border-white/30',
             )} />
         </div>
       </div>
@@ -237,7 +250,7 @@ interface KnockoutBracketProps {
   bracketWinners: BracketWinners
   knockoutScores: KnockoutScores
   onPickWinner: (matchNum: number, teamId: number | null) => void
-  onScoreChange: (matchNum: number, side: 'home' | 'away', value: string) => void
+  onScoreChange: (matchNum: number, side: 'home' | 'away' | 'total', value: string) => void
   disabled?: boolean
 }
 
@@ -259,6 +272,7 @@ export default function KnockoutBracket({
         winnerId={bracketWinners[matchNum] ?? null}
         homeScore={sc?.home ?? ''}
         awayScore={sc?.away ?? ''}
+        totalScore={sc?.total ?? ''}
         onPickWinner={(id) => onPickWinner(matchNum, id)}
         onScoreChange={(side, val) => onScoreChange(matchNum, side, val)}
         disabled={disabled}

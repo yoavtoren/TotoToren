@@ -69,8 +69,9 @@ function buildInitial(
   for (const k of knockoutPreds) {
     bracketWinners[k.match_num] = k.predicted_winner_id
     knockoutScores[k.match_num] = {
-      home: k.predicted_home_score?.toString() ?? '',
-      away: k.predicted_away_score?.toString() ?? '',
+      home:  k.predicted_home_score?.toString()  ?? '',
+      away:  k.predicted_away_score?.toString()  ?? '',
+      total: k.predicted_total_goals?.toString() ?? '',
     }
   }
 
@@ -192,8 +193,9 @@ export default function PredictClient({
           return {
             user_id: userId, match_num: parseInt(matchNum),
             predicted_winner_id: winnerId as number,
-            predicted_home_score: s?.home ? parseInt(s.home) : null,
-            predicted_away_score: s?.away ? parseInt(s.away) : null,
+            predicted_home_score:  s?.home  ? parseInt(s.home)  : null,
+            predicted_away_score:  s?.away  ? parseInt(s.away)  : null,
+            predicted_total_goals: s?.total ? parseInt(s.total) : null,
             updated_at: new Date().toISOString(),
           }
         })

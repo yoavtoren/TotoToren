@@ -56,6 +56,7 @@ export interface KnockoutPrediction {
   predicted_winner_id: number
   predicted_home_score: number | null
   predicted_away_score: number | null
+  predicted_total_goals: number | null
   updated_at: string
 }
 
@@ -122,9 +123,9 @@ export interface BracketWinners {
   [matchNum: number]: number | null
 }
 
-// knockout score predictions: match number → { home, away } string inputs
+// knockout score predictions: match number → { home, away, total } string inputs
 export interface KnockoutScores {
-  [matchNum: number]: { home: string; away: string }
+  [matchNum: number]: { home: string; away: string; total: string }
 }
 
 export interface FuturesState {

@@ -104,10 +104,10 @@ export function usePredictions(initial?: PredictionsInitial) {
   )
 
   const setKnockoutScore = useCallback(
-    (matchNum: number, side: 'home' | 'away', value: string) => {
+    (matchNum: number, side: 'home' | 'away' | 'total', value: string) => {
       setKnockoutScoresState((prev) => ({
         ...prev,
-        [matchNum]: { ...(prev[matchNum] ?? { home: '', away: '' }), [side]: value },
+        [matchNum]: { ...(prev[matchNum] ?? { home: '', away: '', total: '' }), [side]: value },
       }))
     },
     []
