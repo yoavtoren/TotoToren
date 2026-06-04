@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getTeamById, getFlagEmoji } from '@/data/teams'
+import { getTeamById, getFlagEmoji, TEAMS } from '@/data/teams'
 import { GROUP_LETTERS } from '@/lib/constants'
 import type { Match } from '@/types'
 
@@ -26,6 +26,11 @@ export default function AdminClient({
   const [syncing, setSyncing] = useState(false)
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set([GROUP_LETTERS[0]]))
   const [openRounds, setOpenRounds] = useState<Set<string>>(new Set())
+  const [futures, setFutures] = useState({
+    champion_team_id: '', top_scorer_team_id: '', golden_boot_team_id: '',
+    most_conceded_team_id: '', total_goals: '',
+  })
+  const [savingFutures, setSavingFutures] = useState(false)
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok })
@@ -156,6 +161,49 @@ export default function AdminClient({
   function toggleG(g: string) { setOpenGroups(p => { const n = new Set(p); n.has(g) ? n.delete(g) : n.add(g); return n }) }
   function toggleR(r: string) { setOpenRounds(p => { const n = new Set(p); n.has(r) ? n.delete(r) : n.add(r); return n }) }
 
+  async function handleSaveFutures() {
+    setSavingFutures(true)
+    const res = await fetch('/api/admin/save-futures-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({
+        champion_team_id:      futures.champion_team_id      ? parseInt(futures.champion_team_id)      : null,
+        top_scorer_team_id:    futures.top_scorer_team_id    ? parseInt(futures.top_scorer_team_id)    : null,
+        golden_boot_team_id:   futures.golden_boot_team_id   ? parseInt(futures.golden_boot_team_id)   : null,
+        most_conceded_team_id: futures.most_conceded_team_id ? parseInt(futures.most_conceded_team_id) : null,
+        total_goals:           futures.total_goals           ? parseInt(futures.total_goals)           : null,
+      }),
+    })
+    const data = await res.json()
+    setSavingFutures(false)
+    if (res.ok) {
+      showToast('תוצאות עתידיות נשמרו ✓')
+      const calcRes = await fetch('/api/scores/recalculate', { method: 'POST', headers: authHeaders })
+      const calcData = await calcRes.json()
+      showToast(`נשמר ✓  ${calcData.message ?? ''}`)
+    } else {
+      showToast(data.error, false)
+    }
+  }
+
+  const teamSelect = (key: keyof typeof futures, label: string) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: '#4a5568' }}>{label}</label>
+      <select
+        value={futures[key]}
+        onChange={e => setFutures(p => ({ ...p, [key]: e.target.value }))}
+        style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #cbd5e0', fontSize: 13, background: '#fff' }}
+      >
+        <option value="">— לא ידוע —</option>
+        {TEAMS.sort((a, b) => a.name.localeCompare(b.name)).map(t => (
+          <option key={t.id} value={t.id}>
+            {getFlagEmoji(t.flag_code)} {t.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+
   return (
     <div style={{ minHeight: '100vh', background: '#f0f2f5' }}>
 
@@ -255,6 +303,47 @@ export default function AdminClient({
             })}
           </section>
         )}
+
+        {/* Futures Results */}
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>
+            תוצאות עתידיות (פיוצ׳רס)
+          </h2>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+            <p style={{ fontSize: 12, color: '#888', marginBottom: 16 }}>
+              הזן לאחר סיום הטורניר. שמירה תפעיל מחדש חישוב ניקוד.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
+              {teamSelect('champion_team_id', '🏆 אלוף גביע העולם')}
+              {teamSelect('top_scorer_team_id', '⚽ קבוצה הכי שערנית')}
+              {teamSelect('golden_boot_team_id', '👟 עקב זהב (קבוצת הבוקע)')}
+              {teamSelect('most_conceded_team_id', '🥅 הכי הרבה ספיגות')}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4a5568' }}>📊 סה״כ שערים בטורניר</label>
+                <input
+                  type="number" min="0" max="500"
+                  value={futures.total_goals}
+                  onChange={e => setFutures(p => ({ ...p, total_goals: e.target.value }))}
+                  placeholder="e.g. 156"
+                  style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #cbd5e0', fontSize: 13 }}
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleSaveFutures}
+              disabled={savingFutures}
+              style={{
+                padding: '8px 20px', borderRadius: 7, border: 'none',
+                background: savingFutures ? '#aaa' : '#276749',
+                color: '#fff', fontSize: 13, fontWeight: 600,
+                cursor: savingFutures ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {savingFutures ? 'שומר…' : '💾 שמור תוצאות עתידיות + עדכן ניקוד'}
+            </button>
+          </div>
+        </section>
+
       </div>
     </div>
   )
