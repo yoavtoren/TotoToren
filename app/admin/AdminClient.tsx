@@ -236,12 +236,12 @@ export default function AdminClient({
     }
   }
 
-  async function handleSaveStanding(g: string) {
+  async function handleSaveStanding(g: string, overrideIds?: number[]) {
     setSavingStanding(g)
     const res = await fetch('/api/admin/save-group-standings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ group_letter: g, team_ids: standings[g] ?? [0,0,0,0] }),
+      body: JSON.stringify({ group_letter: g, team_ids: overrideIds ?? standings[g] ?? [0,0,0,0] }),
     })
     setSavingStanding(null)
     if (res.ok) showToast(`בית ${g} נשמר ✓`)
@@ -534,7 +534,7 @@ export default function AdminClient({
                       <button
                         onClick={() => {
                           setStandings(p => ({ ...p, [g]: [0,0,0,0] }))
-                          handleSaveStanding(g)
+                          handleSaveStanding(g, [0,0,0,0])
                         }}
                         title="איפוס דירוג"
                         style={{ padding: '6px 10px', borderRadius: 7, border: '1px solid #fc8181', background: 'transparent', color: '#fc8181', fontSize: 12, cursor: 'pointer' }}
@@ -599,13 +599,14 @@ export default function AdminClient({
 
         {/* Cascading Knockout Bracket Selector */}
         {(() => {
-          const r32: number[] = []
+          const r32Set = new Set<number>()
           for (const g of GROUP_LETTERS) {
             const s = standings[g] ?? []
-            if (s[0]) r32.push(s[0])
-            if (s[1]) r32.push(s[1])
+            if (s[0]) r32Set.add(s[0])
+            if (s[1]) r32Set.add(s[1])
           }
-          for (const id of thirdQualifiers) r32.push(id)
+          for (const id of thirdQualifiers) r32Set.add(id)
+          const r32 = [...r32Set]
           if (r32.length === 0) return null
           const stages: { key: string; label: string; max: number; pts: number; pool: number[] }[] = [
             { key: 'r16',      label: 'שמינית גמר — 16 נבחרות',  max: 16, pts: 5,  pool: r32 },
