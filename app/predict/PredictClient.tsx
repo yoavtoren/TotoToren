@@ -153,9 +153,8 @@ export default function PredictClient({
     const supabase = createClient()
 
     try {
-      // Ensure profile row exists (guards against FK error if trigger didn't fire)
-      await supabase.from('profiles')
-        .upsert({ id: userId, display_name: '' }, { onConflict: 'id', ignoreDuplicates: true })
+      // Ensure profile row exists via server route (bypasses RLS, fixes FK errors)
+      await fetch('/api/profile/ensure', { method: 'POST' })
 
       // Part 2 — group standings
       const groupRows = GROUP_LETTERS.flatMap((g) =>
