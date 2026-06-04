@@ -330,27 +330,38 @@ function UserPredictionsModal({
                       <div className="space-y-1">
                         {past.map(m => {
                           const pred = preds.groupMatches[m.match]
-                          const pts = breakdown[String(m.match)] ?? (breakdown as any)[m.match] ?? null
+                          const raw = breakdown[String(m.match)] ?? (breakdown as any)[m.match] ?? null
+                          const pts: number | null = raw == null ? null
+                            : typeof raw === 'object' ? (raw as any).pts
+                            : raw
+                          const rowBg =
+                            pts === 6 ? 'bg-emerald-500/20 border-emerald-500/30' :
+                            pts === 5 ? 'bg-emerald-500/15 border-emerald-500/20' :
+                            pts === 4 ? 'bg-teal-500/15 border-teal-500/20' :
+                            pts === 3 ? 'bg-blue-500/15 border-blue-500/20' :
+                            pts === 2 ? 'bg-amber-500/15 border-amber-500/20' :
+                            pts === 1 ? 'bg-amber-500/10 border-amber-500/15' :
+                            pts === 0 ? 'bg-rose-500/10 border-rose-500/20' :
+                            'bg-white/5 border-white/10'
+                          const ptsColor =
+                            pts != null && pts >= 4 ? 'text-emerald-300 font-extrabold' :
+                            pts === 3 ? 'text-teal-300 font-bold' :
+                            pts === 2 ? 'text-amber-300 font-bold' :
+                            pts === 1 ? 'text-amber-400/80 font-bold' :
+                            pts === 0 ? 'text-rose-400/70' :
+                            'text-white/20'
                           return (
-                            <div key={m.match} className="flex items-center gap-2 text-xs px-3 py-2 glass rounded-xl">
+                            <div key={m.match} className={cn('flex items-center gap-2 text-xs px-3 py-2 rounded-xl border', rowBg)}>
                               <span className="text-white/30 w-14 font-mono shrink-0" dir="ltr">{localShortDt(m.kickoff_utc)}</span>
                               <span className="text-white/70 flex-1 truncate">{m.home} – {m.away}</span>
                               {pred ? (
                                 <span className="font-mono text-white/50 shrink-0 tabular-nums" dir="ltr">
-                                  {pred.predicted_home}:{pred.predicted_away}
+                                  {pred.predicted_home ?? '—'}:{pred.predicted_away ?? '—'}
                                 </span>
                               ) : (
                                 <span className="text-white/20 shrink-0">—</span>
                               )}
-                              <span className={cn(
-                                'font-bold tabular-nums shrink-0 w-8 text-left',
-                                pts === 6 ? 'text-emerald-300' :
-                                pts === 3 ? 'text-emerald-400/70' :
-                                pts === 2 ? 'text-blue-300' :
-                                pts === 1 ? 'text-amber-300' :
-                                pts === 0 ? 'text-rose-300/70' :
-                                'text-white/20'
-                              )}>
+                              <span className={cn('tabular-nums shrink-0 w-8 text-left text-sm', ptsColor)}>
                                 {pts != null ? `+${pts}` : '—'}
                               </span>
                             </div>
