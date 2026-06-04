@@ -187,10 +187,14 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
   }
 
   async function patchProfile(patch: Record<string, any>) {
-    const next = { ...profile, ...patch }
-    setProfile(next)
+    const prev = profile
+    setProfile({ ...profile, ...patch })
     const { error } = await supabase.from('profiles').update(patch).eq('id', userId)
-    if (error) showToast(error.message, false)
+    if (error) {
+      setProfile(prev)
+      showToast(error.message, false)
+      throw error
+    }
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -216,9 +220,13 @@ export default function ProfileClient({ userId, email, profile: initialProfile, 
     const trimmed = displayName.trim()
     if (!trimmed || trimmed === profile.display_name) { setNameEditing(false); return }
     startSaving(async () => {
-      await patchProfile({ display_name: trimmed })
-      setNameEditing(false)
-      showToast('שם עודכן!')
+      try {
+        await patchProfile({ display_name: trimmed })
+        setNameEditing(false)
+        showToast('שם עודכן!')
+      } catch {
+        // error already shown by patchProfile — keep editing open
+      }
     })
   }
 
