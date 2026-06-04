@@ -55,8 +55,16 @@ export default function LoginPage() {
       else { router.push(redirectTo) }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) { setError(error.message) }
-      else { router.push(redirectTo) }
+      if (error) {
+        // Common case: user signed up with Google and has no password
+        if (error.message.toLowerCase().includes('invalid login credentials')) {
+          setError('פרטים שגויים. אם נרשמת עם Google — השתמש בכפתור "כניסה עם Google" למעלה.')
+        } else {
+          setError(error.message)
+        }
+      } else {
+        router.push(redirectTo)
+      }
     }
 
     setLoading(false)
