@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { resolveMatchTeam } from '@/lib/bracket'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
 import { KNOCKOUT_MATCHES } from '@/data/match-schedule'
@@ -282,6 +283,20 @@ export default function KnockoutBracket({
   }
 
   const champion    = bracketWinners[104] != null ? getTeamById(bracketWinners[104]!) : null
+  const prevChampionId = useRef<number | null>(null)
+
+  useEffect(() => {
+    const newId = bracketWinners[104] ?? null
+    if (newId !== null && newId !== prevChampionId.current) {
+      import('canvas-confetti').then(({ default: confetti }) => {
+        confetti({ particleCount: 160, spread: 80, origin: { y: 0.5 } })
+        setTimeout(() => confetti({ particleCount: 80, spread: 120, origin: { y: 0.4 }, angle: 60 }), 300)
+        setTimeout(() => confetti({ particleCount: 80, spread: 120, origin: { y: 0.4 }, angle: 120 }), 500)
+      })
+    }
+    prevChampionId.current = newId
+  }, [bracketWinners[104]])
+
   const sfTopY      = cardTopY('sf', 0)
   const sfCenterY   = sfTopY + CH / 2
 
@@ -389,12 +404,19 @@ export default function KnockoutBracket({
             {/* Champion */}
             {champion && (
               <div
-                className="absolute glass rounded-xl p-2 text-center glow-emerald"
-                style={{ top: sfTopY + CH + 48, left: 8, right: 8 }}
+                className="absolute rounded-2xl text-center overflow-hidden"
+                style={{ top: sfTopY + CH + 40, left: 4, right: 4,
+                  background: 'linear-gradient(135deg, rgba(234,179,8,0.18), rgba(234,179,8,0.06))',
+                  border: '1.5px solid rgba(234,179,8,0.45)',
+                  boxShadow: '0 0 24px rgba(234,179,8,0.2)',
+                }}
               >
-                <p className="text-lg">{getFlagEmoji(champion.flag_code)}</p>
-                <p className="text-[10px] text-emerald-300 font-bold">{champion.name}</p>
-                <p className="text-[9px] text-white/30">Champion 🏆</p>
+                <div className="px-3 py-3 space-y-1">
+                  <p className="text-3xl leading-none">🏆</p>
+                  <p className="text-[9px] text-yellow-400/60 font-bold uppercase tracking-widest">אלוף</p>
+                  <p className="text-2xl leading-none mt-1">{getFlagEmoji(champion.flag_code)}</p>
+                  <p className="text-sm font-extrabold text-yellow-200 leading-tight">{champion.name}</p>
+                </div>
               </div>
             )}
 
