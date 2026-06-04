@@ -3,14 +3,12 @@
 import { useState } from 'react'
 import { getTeamById, getFlagEmoji } from '@/data/teams'
 import { GROUP_LETTERS } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 import type { Match } from '@/types'
 
 const ROUND_LABELS: Record<string, string> = {
   r32: 'שלב 32', r16: 'שלב 16', qf: 'רבע גמר',
   sf: 'חצי גמר', third_place: 'מקום שלישי', final: 'גמר',
 }
-
 const KNOCKOUT_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'third_place', 'final'] as const
 
 export default function AdminClient({
@@ -19,27 +17,32 @@ export default function AdminClient({
   groupMatches: Match[]
   knockoutMatches: Match[]
 }) {
-  const totalMatches = groupMatches.length + knockoutMatches.length
+  const total = groupMatches.length + knockoutMatches.length
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>({})
   const [saving, setSaving] = useState<number | null>(null)
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set())
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [syncing, setSyncing] = useState(false)
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(GROUP_LETTERS.slice(0, 1)))
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set([GROUP_LETTERS[0]]))
   const [openRounds, setOpenRounds] = useState<Set<string>>(new Set())
 
-  function showToast(msg: string) {
-    setToast(msg)
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok })
     setTimeout(() => setToast(null), 3500)
   }
 
-  async function handleSyncSchedule() {
+  async function handleLogout() {
+    await fetch('/api/admin/auth', { method: 'DELETE' })
+    window.location.href = '/admin/login'
+  }
+
+  async function handleSync() {
     setSyncing(true)
     const res = await fetch('/api/admin/sync-schedule', { method: 'POST' })
     const data = await res.json()
     setSyncing(false)
     if (res.ok) { showToast(data.message); window.location.reload() }
-    else showToast(`שגיאה: ${data.error}`)
+    else showToast(data.error, false)
   }
 
   async function handleSave(matchId: number) {
@@ -47,107 +50,78 @@ export default function AdminClient({
     if (!s?.home || !s?.away) return
     setSaving(matchId)
 
-    // 1. Save result
     const saveRes = await fetch('/api/admin/save-result', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        matchId,
-        homeScore: parseInt(s.home),
-        awayScore: parseInt(s.away),
-      }),
+      body: JSON.stringify({ matchId, homeScore: parseInt(s.home), awayScore: parseInt(s.away) }),
     })
     if (!saveRes.ok) {
-      const data = await saveRes.json()
-      showToast(`שגיאה בשמירה: ${data.error}`)
+      showToast((await saveRes.json()).error, false)
       setSaving(null)
       return
     }
 
-    // 2. Recalculate scores immediately
     const calcRes = await fetch('/api/scores/recalculate', { method: 'POST' })
     const calcData = await calcRes.json()
-
     setSavedIds(prev => new Set([...prev, matchId]))
     setSaving(null)
-    showToast(`✓ נשמר ועודכן — ${calcData.message ?? ''}`)
+    showToast(`נשמר ✓  ${calcData.message ?? ''}`)
   }
 
-  function setScore(matchId: number, side: 'home' | 'away', value: string) {
-    setScores(prev => ({
-      ...prev,
-      [matchId]: { ...(prev[matchId] ?? { home: '', away: '' }), [side]: value },
-    }))
+  function setScore(id: number, side: 'home' | 'away', val: string) {
+    setScores(p => ({ ...p, [id]: { ...(p[id] ?? { home: '', away: '' }), [side]: val } }))
   }
 
-  function renderMatchRow(m: Match) {
+  function renderRow(m: Match) {
     const home = m.home_team_id ? getTeamById(m.home_team_id) : null
     const away = m.away_team_id ? getTeamById(m.away_team_id) : null
     const sc = scores[m.id]
     const isSaved = savedIds.has(m.id)
     const hasResult = m.home_score !== null
-    const homeVal = sc?.home !== undefined ? sc.home : (hasResult ? String(m.home_score) : '')
-    const awayVal = sc?.away !== undefined ? sc.away : (hasResult ? String(m.away_score) : '')
-    const canSave = (sc?.home !== undefined && sc?.away !== undefined && sc.home !== '' && sc.away !== '')
+    const hv = sc?.home !== undefined ? sc.home : (hasResult ? String(m.home_score) : '')
+    const av = sc?.away !== undefined ? sc.away : (hasResult ? String(m.away_score) : '')
+    const canSave = sc?.home !== undefined && sc?.away !== undefined && sc.home !== '' && sc.away !== ''
 
     return (
-      <div
-        key={m.id}
-        dir="ltr"
-        className={cn(
-          'flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all',
-          isSaved
-            ? 'border-emerald-400/30 bg-emerald-500/8'
-            : hasResult
-              ? 'border-white/10 bg-white/5'
-              : 'border-white/8',
-        )}
-      >
-        {/* Match ID */}
-        <span className="text-[10px] text-white/25 font-mono w-8 shrink-0 text-left">M{m.id}</span>
-
-        {/* Date */}
-        <span className="text-[10px] text-white/30 font-mono w-12 shrink-0 text-left">
+      <div key={m.id} style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '7px 10px', borderRadius: 8,
+        border: isSaved ? '1px solid #68d391' : hasResult ? '1px solid #e2e8f0' : '1px solid #eee',
+        background: isSaved ? '#f0fff4' : hasResult ? '#f7fafc' : '#fafafa',
+        marginBottom: 4,
+      }}>
+        <span style={{ fontSize: 11, color: '#999', fontFamily: 'monospace', width: 32, flexShrink: 0 }}>M{m.id}</span>
+        <span style={{ fontSize: 11, color: '#bbb', width: 48, flexShrink: 0 }}>
           {new Date(m.scheduled_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
         </span>
 
-        {/* Home team */}
-        <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-          <span className="text-xs font-medium text-white truncate">
+        {/* Home */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, minWidth: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {home ? home.name : 'TBD'}
           </span>
-          {home && <span className="text-base shrink-0">{getFlagEmoji(home.flag_code)}</span>}
+          {home && <span style={{ fontSize: 18, flexShrink: 0 }}>{getFlagEmoji(home.flag_code)}</span>}
         </div>
 
-        {/* Score inputs */}
-        <div className="flex items-center gap-1 shrink-0">
-          <input
-            type="number" min="0" max="20"
-            value={homeVal}
+        {/* Score */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <input type="number" min="0" max="20" value={hv}
             onChange={e => setScore(m.id, 'home', e.target.value)}
             placeholder="–"
-            className={cn(
-              'glass-input w-12 text-center py-1.5 text-sm font-mono',
-              hasResult && !sc ? 'text-white/60' : '',
-            )}
+            style={{ width: 44, padding: '5px 4px', border: '1px solid #ccc', borderRadius: 6, fontSize: 14, textAlign: 'center', fontFamily: 'monospace' }}
           />
-          <span className="text-white/30 font-bold text-sm">:</span>
-          <input
-            type="number" min="0" max="20"
-            value={awayVal}
+          <span style={{ fontWeight: 700, color: '#999' }}>:</span>
+          <input type="number" min="0" max="20" value={av}
             onChange={e => setScore(m.id, 'away', e.target.value)}
             placeholder="–"
-            className={cn(
-              'glass-input w-12 text-center py-1.5 text-sm font-mono',
-              hasResult && !sc ? 'text-white/60' : '',
-            )}
+            style={{ width: 44, padding: '5px 4px', border: '1px solid #ccc', borderRadius: 6, fontSize: 14, textAlign: 'center', fontFamily: 'monospace' }}
           />
         </div>
 
-        {/* Away team */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {away && <span className="text-base shrink-0">{getFlagEmoji(away.flag_code)}</span>}
-          <span className="text-xs font-medium text-white truncate">
+        {/* Away */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+          {away && <span style={{ fontSize: 18, flexShrink: 0 }}>{getFlagEmoji(away.flag_code)}</span>}
+          <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {away ? away.name : 'TBD'}
           </span>
         </div>
@@ -156,12 +130,13 @@ export default function AdminClient({
         <button
           onClick={() => handleSave(m.id)}
           disabled={saving === m.id || !canSave}
-          className={cn(
-            'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-            isSaved
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/25'
-              : 'bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-200 border border-indigo-400/25 disabled:opacity-30 disabled:cursor-not-allowed',
-          )}
+          style={{
+            flexShrink: 0, padding: '5px 12px', borderRadius: 7, border: 'none',
+            cursor: saving === m.id || !canSave ? 'not-allowed' : 'pointer',
+            fontSize: 12, fontWeight: 600,
+            background: isSaved ? '#48bb78' : canSave ? '#3182ce' : '#e2e8f0',
+            color: isSaved || canSave ? '#fff' : '#aaa',
+          }}
         >
           {saving === m.id ? '…' : isSaved ? '✓ נשמר' : 'שמור'}
         </button>
@@ -169,135 +144,115 @@ export default function AdminClient({
     )
   }
 
-  // Group matches by group letter
   const byGroup: Record<string, Match[]> = {}
-  for (const g of GROUP_LETTERS) {
-    byGroup[g] = groupMatches.filter(m => m.group_letter === g)
-  }
+  for (const g of GROUP_LETTERS) byGroup[g] = groupMatches.filter(m => m.group_letter === g)
 
-  // Knockout by round
   const byRound: Record<string, Match[]> = {}
-  for (const r of KNOCKOUT_ROUNDS) {
-    byRound[r] = knockoutMatches.filter(m => m.stage === r)
-  }
+  for (const r of KNOCKOUT_ROUNDS) byRound[r] = knockoutMatches.filter(m => m.stage === r)
 
-  function toggleGroup(g: string) {
-    setOpenGroups(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n })
-  }
-  function toggleRound(r: string) {
-    setOpenRounds(prev => { const n = new Set(prev); n.has(r) ? n.delete(r) : n.add(r); return n })
-  }
+  function toggleG(g: string) { setOpenGroups(p => { const n = new Set(p); n.has(g) ? n.delete(g) : n.add(g); return n }) }
+  function toggleR(r: string) { setOpenRounds(p => { const n = new Set(p); n.has(r) ? n.delete(r) : n.add(r); return n }) }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6" dir="rtl">
+    <div style={{ minHeight: '100vh', background: '#f0f2f5' }}>
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-20 right-4 z-50 bg-emerald-500/90 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg">
-          {toast}
+        <div style={{
+          position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+          background: toast.ok ? '#276749' : '#c53030', color: '#fff',
+          padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600,
+          zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        }}>
+          {toast.msg}
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div style={{ background: '#1a202c', color: '#fff', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="text-3xl font-extrabold text-shadow">דף המנהל</h1>
-          <p className="text-sm text-white/50 mt-1">
-            {totalMatches === 0
-              ? 'לא נמצאו משחקים — סנכרן את הלוח תחילה'
-              : `${totalMatches} משחקים · שמירה מחשבת ניקוד מחדש אוטומטית`}
-          </p>
+          <span style={{ fontSize: 18, fontWeight: 700 }}>דף המנהל</span>
+          <span style={{ marginRight: 12, fontSize: 13, color: '#a0aec0' }}>TotoToren · {total} משחקים</span>
         </div>
-        <button
-          onClick={handleSyncSchedule}
-          disabled={syncing}
-          className="glass glass-hover px-4 py-2 rounded-xl text-sm font-semibold text-white/70 transition-colors shrink-0"
-        >
-          {syncing ? 'מסנכרן…' : '🔄 סנכרן לוח משחקים'}
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={handleSync} disabled={syncing}
+            style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #4a5568', background: 'transparent', color: '#e2e8f0', cursor: syncing ? 'not-allowed' : 'pointer', fontSize: 13 }}>
+            {syncing ? 'מסנכרן…' : '🔄 סנכרן לוח'}
+          </button>
+          <button onClick={handleLogout}
+            style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: '#e53e3e', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            התנתק
+          </button>
+        </div>
       </div>
 
-      {totalMatches === 0 && (
-        <div className="glass rounded-2xl p-8 text-center space-y-3">
-          <p className="text-4xl">📋</p>
-          <p className="text-white/70">לחץ על "סנכרן לוח משחקים" כדי לטעון את 104 המשחקים למסד הנתונים.</p>
-          <p className="text-sm text-white/40">פעולה זו נדרשת פעם אחת בלבד.</p>
-        </div>
-      )}
+      <div style={{ maxWidth: 920, margin: '24px auto', padding: '0 16px' }}>
 
-      {/* ── Group stage ──────────────────────────────────────── */}
-      {groupMatches.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-lg font-bold text-white/80 px-1">שלב הבתים</h2>
-          {GROUP_LETTERS.map(g => {
-            const matches = byGroup[g] ?? []
-            if (!matches.length) return null
-            const done = matches.filter(m => m.home_score !== null).length
-            const isOpen = openGroups.has(g)
-            return (
-              <div key={g} className="glass rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => toggleGroup(g)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-white">בית {g}</span>
-                    <span className={cn(
-                      'text-xs px-2 py-0.5 rounded-full font-mono',
-                      done === 6 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/40',
-                    )}>
-                      {done}/6
-                    </span>
-                  </div>
-                  <span className="text-white/30 text-xs">{isOpen ? '▲' : '▼'}</span>
-                </button>
-                {isOpen && (
-                  <div className="border-t border-white/10 p-3 space-y-1.5">
-                    {matches.map(renderMatchRow)}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </section>
-      )}
+        {total === 0 && (
+          <div style={{ background: '#fff', borderRadius: 10, padding: 32, textAlign: 'center', color: '#666', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+            <p style={{ fontSize: 16, marginBottom: 8 }}>לא נמצאו משחקים במסד הנתונים.</p>
+            <p style={{ fontSize: 13, color: '#999' }}>לחץ "סנכרן לוח" בכותרת כדי לטעון את 104 המשחקים.</p>
+          </div>
+        )}
 
-      {/* ── Knockout ─────────────────────────────────────────── */}
-      {knockoutMatches.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-lg font-bold text-white/80 px-1">נוקאאוט</h2>
-          {KNOCKOUT_ROUNDS.map(round => {
-            const matches = byRound[round] ?? []
-            if (!matches.length) return null
-            const done = matches.filter(m => m.home_score !== null).length
-            const isOpen = openRounds.has(round)
-            return (
-              <div key={round} className="glass rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => toggleRound(round)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-white">{ROUND_LABELS[round]}</span>
-                    <span className={cn(
-                      'text-xs px-2 py-0.5 rounded-full font-mono',
-                      done === matches.length ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/40',
-                    )}>
-                      {done}/{matches.length}
-                    </span>
+        {/* Group stage */}
+        {groupMatches.length > 0 && (
+          <section style={{ marginBottom: 24 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>
+              שלב הבתים
+            </h2>
+            {GROUP_LETTERS.map(g => {
+              const ms = byGroup[g] ?? []
+              if (!ms.length) return null
+              const done = ms.filter(m => m.home_score !== null).length
+              const open = openGroups.has(g)
+              return (
+                <div key={g} style={{ background: '#fff', borderRadius: 10, marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+                  <div onClick={() => toggleG(g)} style={{ padding: '11px 16px', background: '#f7fafc', borderBottom: open ? '1px solid #eee' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>בית {g}</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: done === 6 ? '#c6f6d5' : '#e2e8f0', color: done === 6 ? '#276749' : '#718096' }}>
+                        {done}/6
+                      </span>
+                    </div>
+                    <span style={{ color: '#a0aec0', fontSize: 12 }}>{open ? '▲' : '▼'}</span>
                   </div>
-                  <span className="text-white/30 text-xs">{isOpen ? '▲' : '▼'}</span>
-                </button>
-                {isOpen && (
-                  <div className="border-t border-white/10 p-3 space-y-1.5">
-                    {matches.map(renderMatchRow)}
+                  {open && <div style={{ padding: '10px 12px' }}>{ms.map(renderRow)}</div>}
+                </div>
+              )
+            })}
+          </section>
+        )}
+
+        {/* Knockout */}
+        {knockoutMatches.length > 0 && (
+          <section>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>
+              נוקאאוט
+            </h2>
+            {KNOCKOUT_ROUNDS.map(round => {
+              const ms = byRound[round] ?? []
+              if (!ms.length) return null
+              const done = ms.filter(m => m.home_score !== null).length
+              const open = openRounds.has(round)
+              return (
+                <div key={round} style={{ background: '#fff', borderRadius: 10, marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+                  <div onClick={() => toggleR(round)} style={{ padding: '11px 16px', background: '#f7fafc', borderBottom: open ? '1px solid #eee' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>{ROUND_LABELS[round]}</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: done === ms.length ? '#c6f6d5' : '#e2e8f0', color: done === ms.length ? '#276749' : '#718096' }}>
+                        {done}/{ms.length}
+                      </span>
+                    </div>
+                    <span style={{ color: '#a0aec0', fontSize: 12 }}>{open ? '▲' : '▼'}</span>
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </section>
-      )}
+                  {open && <div style={{ padding: '10px 12px' }}>{ms.map(renderRow)}</div>}
+                </div>
+              )
+            })}
+          </section>
+        )}
+      </div>
     </div>
   )
 }

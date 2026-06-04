@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isProtected = path.startsWith('/predict') || path.startsWith('/admin')
+  const isProtected = path.startsWith('/predict') // /admin has its own cookie-based auth
 
   if (isProtected && !user) {
     const redirectUrl = request.nextUrl.clone()
