@@ -101,6 +101,19 @@ export async function POST(request: NextRequest) {
   const allKnockoutPreds = kpRes.data ?? []
   const allFutures = fpRes.data ?? []
 
+  // TEMP DEBUG — remove after diagnosis
+  if (process.env.RECALC_DEBUG === '1') {
+    return NextResponse.json({
+      debug: true,
+      gmError: gmRes.error?.message,
+      predCount: allGroupMatchPreds.length,
+      firstPred: allGroupMatchPreds[0],
+      completedMatches: completedMatches?.length,
+      firstMatch: completedMatches?.[0],
+      groupMatchResults,
+    })
+  }
+
   const scoreRows = profiles.map((p: { id: string }) => {
     const uid = p.id
 
