@@ -126,7 +126,8 @@ export default function AdminClient({
     const canSave = sc?.home !== undefined && sc?.away !== undefined && sc.home !== '' && sc.away !== ''
 
     return (
-      <div key={m.id} style={{
+      // dir="ltr" matches the predict page — Home LEFT : Away RIGHT, same as users see
+      <div key={m.id} dir="ltr" style={{
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '7px 10px', borderRadius: 8,
         border: isSaved ? '1px solid #68d391' : hasResult ? '1px solid #e2e8f0' : '1px solid #eee',
@@ -138,35 +139,37 @@ export default function AdminClient({
           {new Date(m.scheduled_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
         </span>
 
-        {/* Home */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, minWidth: 0 }}>
+        {/* Home team — "1" in 1X2 */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#3182ce', background: '#ebf8ff', borderRadius: 4, padding: '1px 4px', flexShrink: 0 }}>1</span>
+          {home && <span style={{ fontSize: 18, flexShrink: 0 }}>{getFlagEmoji(home.flag_code)}</span>}
           <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {home ? home.name : 'TBD'}
           </span>
-          {home && <span style={{ fontSize: 18, flexShrink: 0 }}>{getFlagEmoji(home.flag_code)}</span>}
         </div>
 
-        {/* Score */}
+        {/* Score: home : away */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <input type="number" min="0" max="20" value={hv}
             onChange={e => setScore(m.id, 'home', e.target.value)}
             placeholder="–"
-            style={{ width: 44, padding: '5px 4px', border: '1px solid #ccc', borderRadius: 6, fontSize: 14, textAlign: 'center', fontFamily: 'monospace' }}
+            style={{ width: 44, padding: '5px 4px', border: '1px solid #3182ce', borderRadius: 6, fontSize: 14, textAlign: 'center', fontFamily: 'monospace' }}
           />
           <span style={{ fontWeight: 700, color: '#999' }}>:</span>
           <input type="number" min="0" max="20" value={av}
             onChange={e => setScore(m.id, 'away', e.target.value)}
             placeholder="–"
-            style={{ width: 44, padding: '5px 4px', border: '1px solid #ccc', borderRadius: 6, fontSize: 14, textAlign: 'center', fontFamily: 'monospace' }}
+            style={{ width: 44, padding: '5px 4px', border: '1px solid #e53e3e', borderRadius: 6, fontSize: 14, textAlign: 'center', fontFamily: 'monospace' }}
           />
         </div>
 
-        {/* Away */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-          {away && <span style={{ fontSize: 18, flexShrink: 0 }}>{getFlagEmoji(away.flag_code)}</span>}
+        {/* Away team — "2" in 1X2 */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, minWidth: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {away ? away.name : 'TBD'}
           </span>
+          {away && <span style={{ fontSize: 18, flexShrink: 0 }}>{getFlagEmoji(away.flag_code)}</span>}
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#e53e3e', background: '#fff5f5', borderRadius: 4, padding: '1px 4px', flexShrink: 0 }}>2</span>
         </div>
 
         {/* Save button */}
