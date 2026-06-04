@@ -40,7 +40,7 @@ function TeamPicker({ label, hint, points, value, onChange, disabled }: TeamPick
           disabled={disabled}
           className={cn(
             'glass-input appearance-none pr-8 cursor-pointer',
-            !value && 'text-white/30'
+            value ? 'text-white' : 'text-white/60'
           )}
         >
           <option value="">— בחרו קבוצה —</option>

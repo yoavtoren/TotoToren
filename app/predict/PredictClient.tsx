@@ -96,7 +96,7 @@ function SectionWrapper({ filled, total, children }: {
   const pct  = total > 0 ? Math.round((filled / total) * 100) : 0
   return (
     <div className={cn(
-      'relative rounded-2xl transition-all',
+      'relative rounded-2xl transition-all pt-8',
       !done && 'ring-1 ring-amber-500/20',
     )}>
       {children}

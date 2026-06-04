@@ -1,22 +1,30 @@
 'use client'
 
-import { useState } from 'react'
 import { resolveMatchTeam } from '@/lib/bracket'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
+import { KNOCKOUT_MATCHES } from '@/data/match-schedule'
 import { cn } from '@/lib/utils'
 import { SCORING } from '@/lib/scoring.config'
 import type { GroupOrder, BracketWinners, ThirdPlaceState, KnockoutScores } from '@/types'
 
+// ─── Match date lookup ─────────────────────────────────────────────────────────
+const KO_DATE: Record<number, string> = Object.fromEntries(
+  KNOCKOUT_MATCHES.map(m => [
+    m.match,
+    new Date(m.date_utc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+  ])
+)
+
 // ─── Layout constants ──────────────────────────────────────────────────────────
-const CH     = 56             // card height (px)
+const CH     = 80             // card height (px) — increased to fit always-visible score row
 const CW     = 116            // card width (px)
 const CGAP   = 16             // horizontal gap between columns (connector space)
 const SGAP   = 24             // vertical gap between sibling cards in same round
 
-const SLOT     = CH + SGAP        // = 62   one vertical slot
+const SLOT     = CH + SGAP        // = 104  one vertical slot
 const HALF_W   = 4 * (CW + CGAP) // = 528  width of each bracket half
 const CENTER_W = 160              // width of center section
-const TOTAL_H  = 8 * SLOT         // = 496  total bracket height
+const TOTAL_H  = 8 * SLOT         // = 832  total bracket height
 
 // ─── Position helpers ──────────────────────────────────────────────────────────
 type Round = 'r32' | 'r16' | 'qf' | 'sf'
@@ -53,6 +61,7 @@ const R_R32 = [83, 84, 81, 82, 86, 88, 85, 87]
 // ─── Compact match card ────────────────────────────────────────────────────────
 interface MatchCardProps {
   matchNum: number
+  date?: string
   homeId: number | null; awayId: number | null; winnerId: number | null
   homeScore: string; awayScore: string
   onPickWinner: (id: number | null) => void
@@ -62,10 +71,9 @@ interface MatchCardProps {
 }
 
 function MatchCard({
-  matchNum, homeId, awayId, winnerId, homeScore, awayScore,
+  matchNum, date, homeId, awayId, winnerId, homeScore, awayScore,
   onPickWinner, onScoreChange, disabled, highlight,
 }: MatchCardProps) {
-  const [scoreOpen, setScoreOpen] = useState(false)
   const canPick = !disabled && homeId !== null && awayId !== null
 
   const TeamRow = ({ teamId }: { teamId: number | null }) => {
@@ -76,7 +84,6 @@ function MatchCard({
       <button
         onClick={() => {
           if (!clickable) return
-          // clicking the already-picked winner deselects it (undo)
           onPickWinner(isWinner ? null : teamId)
         }}
         disabled={!clickable}
@@ -114,29 +121,27 @@ function MatchCard({
     )}>
       <div className="flex items-center justify-between px-1.5 py-0.5 bg-white/5 border-b border-white/10">
         <span className="text-[9px] font-mono text-white/20">M{matchNum}</span>
-        {canPick && (
-          <button
-            onClick={() => setScoreOpen(o => !o)}
-            className="text-[9px] text-white/35 hover:text-emerald-300/70 transition-colors"
-          >
-            {scoreOpen ? 'hide' : `+score (+${SCORING.KO_TOTAL_GOALS}/+${SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}pts)`}
-          </button>
-        )}
+        {date && <span className="text-[9px] font-mono text-white/25">{date}</span>}
       </div>
       <div className="px-0.5 py-0.5">
         <TeamRow teamId={homeId} />
         <div className="h-px bg-white/5 mx-1.5" />
         <TeamRow teamId={awayId} />
       </div>
-      {scoreOpen && (
-        <div className="px-1.5 pb-1.5 flex items-center gap-1 pt-1">
+      {/* Score inputs — always visible */}
+      {canPick ? (
+        <div className="px-1.5 pb-1 flex items-center gap-1 pt-0.5 border-t border-white/5">
           <input type="number" min="0" max="20" value={homeScore}
-            onChange={e => onScoreChange('home', e.target.value)} placeholder="0"
+            onChange={e => onScoreChange('home', e.target.value)} placeholder="–"
             className="glass-input text-center py-0.5 text-[11px] w-full" />
-          <span className="text-white/30 text-[10px]">:</span>
+          <span className="text-white/30 text-[10px] shrink-0">:</span>
           <input type="number" min="0" max="20" value={awayScore}
-            onChange={e => onScoreChange('away', e.target.value)} placeholder="0"
+            onChange={e => onScoreChange('away', e.target.value)} placeholder="–"
             className="glass-input text-center py-0.5 text-[11px] w-full" />
+        </div>
+      ) : (
+        <div className="px-1.5 pb-1 flex items-center justify-center pt-0.5 border-t border-white/5">
+          <span className="text-[9px] text-white/15 font-mono">— : —</span>
         </div>
       )}
     </div>
@@ -239,6 +244,7 @@ export default function KnockoutBracket({
     return (
       <MatchCard
         matchNum={matchNum}
+        date={KO_DATE[matchNum]}
         homeId={resolve(matchNum, 'home')}
         awayId={resolve(matchNum, 'away')}
         winnerId={bracketWinners[matchNum] ?? null}
@@ -263,9 +269,11 @@ export default function KnockoutBracket({
     <section className="space-y-3">
       <div>
         <h2 className="text-xl font-bold text-shadow">חלק 4 — סבבי הנוקאאוט</h2>
-        <p className="text-sm text-white/50 mt-0.5">
-          לחצו על קבוצה לניחוש המנצח. לחיצה על "+score" תוסיף תוצאה לבונוס נקודות.
-        </p>
+        <div className="flex flex-wrap gap-2 mt-1 text-xs">
+          <span className="glass px-2 py-1 rounded-lg"><strong className="text-amber-300">Σ סך שערים</strong> <span className="text-white/40">= +{SCORING.KO_TOTAL_GOALS} נק׳</span></span>
+          <span className="glass px-2 py-1 rounded-lg"><strong className="text-emerald-300">תוצאה מדויקת</strong> <span className="text-white/40">= +{SCORING.KO_EXACT} נק׳</span></span>
+          <span className="text-white/30 py-1 text-xs">לחצו על קבוצה לניחוש המנצח</span>
+        </div>
       </div>
 
       {/* dir=ltr: bracket always reads left→right regardless of page language */}
@@ -274,34 +282,31 @@ export default function KnockoutBracket({
         {/* Round label row */}
         <div className="flex items-end pb-2" style={{ height: 56 }}>
           {([
-            { label: 'Round of 32', pts: SCORING.ADV_R16   },
-            { label: 'Round of 16', pts: SCORING.ADV_QF    },
-            { label: 'Quarters',    pts: SCORING.ADV_SF    },
-            { label: 'Semis',       pts: SCORING.ADV_FINAL },
+            { label: '32 אחרונות', pts: SCORING.ADV_R16   },
+            { label: 'שמינית גמר', pts: SCORING.ADV_QF    },
+            { label: 'רבע גמר',    pts: SCORING.ADV_SF    },
+            { label: 'חצי גמר',    pts: SCORING.ADV_FINAL },
           ] as const).map(({ label, pts }, i) => (
             <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }} className="text-center">
               <p className="text-[7px] font-semibold text-white/30 uppercase tracking-widest truncate">{label}</p>
               <p className="text-[11px] font-bold text-emerald-400 leading-tight mt-0.5">+{pts} pts</p>
-              <p className="text-[7px] text-white/20 mt-0.5">score +{SCORING.KO_TOTAL_GOALS}/+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}</p>
             </div>
           ))}
 
           <div style={{ width: CENTER_W, marginLeft: CGAP, marginRight: CGAP }} className="text-center">
-            <p className="text-[9px] font-bold text-yellow-400/70 uppercase tracking-widest">🏆 Final</p>
+            <p className="text-[9px] font-bold text-yellow-400/70 uppercase tracking-widest">🏆 גמר</p>
             <p className="text-[11px] font-bold text-yellow-400 leading-tight mt-0.5">+{SCORING.ADV_FINAL} pts</p>
-            <p className="text-[7px] text-yellow-300/40 mt-0.5">score +{SCORING.KO_TOTAL_GOALS}/+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}</p>
           </div>
 
           {([
-            { label: 'Semis',       pts: SCORING.ADV_FINAL },
-            { label: 'Quarters',    pts: SCORING.ADV_SF    },
-            { label: 'Round of 16', pts: SCORING.ADV_QF    },
-            { label: 'Round of 32', pts: SCORING.ADV_R16   },
+            { label: 'חצי גמר',    pts: SCORING.ADV_FINAL },
+            { label: 'רבע גמר',    pts: SCORING.ADV_SF    },
+            { label: 'שמינית גמר', pts: SCORING.ADV_QF    },
+            { label: '32 אחרונות', pts: SCORING.ADV_R16   },
           ] as const).map(({ label, pts }, i) => (
             <div key={label} style={{ width: CW, marginLeft: i === 0 ? 0 : CGAP }} className="text-center">
               <p className="text-[7px] font-semibold text-white/30 uppercase tracking-widest truncate">{label}</p>
               <p className="text-[11px] font-bold text-emerald-400 leading-tight mt-0.5">+{pts} pts</p>
-              <p className="text-[7px] text-white/20 mt-0.5">score +{SCORING.KO_TOTAL_GOALS}/+{SCORING.KO_TOTAL_GOALS + SCORING.KO_EXACT}</p>
             </div>
           ))}
         </div>
@@ -351,7 +356,7 @@ export default function KnockoutBracket({
               <div className="rounded-2xl overflow-hidden ring-2 ring-yellow-400/60 shadow-lg shadow-yellow-500/20">
                 <div className="bg-yellow-400/15 border-b border-yellow-400/30 py-1.5 text-center">
                   <p className="text-2xl leading-none">🏆</p>
-                  <p className="text-[10px] text-yellow-300 font-bold tracking-widest uppercase mt-0.5">The Final</p>
+                  <p className="text-[10px] text-yellow-300 font-bold tracking-widest uppercase mt-0.5">גמר</p>
                 </div>
                 {card(104, true)}
               </div>
@@ -374,7 +379,7 @@ export default function KnockoutBracket({
               <div className="rounded-xl overflow-hidden ring-1 ring-amber-700/40">
                 <div className="bg-amber-900/20 border-b border-amber-700/30 py-1 text-center flex items-center justify-center gap-1">
                   <span className="text-base leading-none">🥉</span>
-                  <p className="text-[9px] text-amber-400/80 font-semibold tracking-wide uppercase">3rd Place</p>
+                  <p className="text-[9px] text-amber-400/80 font-semibold tracking-wide">משחק על המקום השלישי</p>
                 </div>
                 {card(103)}
               </div>
