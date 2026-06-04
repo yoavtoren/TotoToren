@@ -69,27 +69,30 @@ function NextMatchHero() {
     ? `Group ${(gm as any).group} — ${(gm as any).home} vs ${(gm as any).away}`
     : `M${next.match} — ${ROUND_LABELS[(next as any).stage]}`
 
+  // Same order as homepage CountdownTimer (RTL renders right-to-left so seconds end up on the right)
   const units = [
-    { v: d, l: 'Days' }, { v: h, l: 'Hours' }, { v: m, l: 'Min' }, { v: s, l: 'Sec' },
+    { v: s, l: 'שניות' }, { v: m, l: 'דקות' }, { v: h, l: 'שעות' }, { v: d, l: 'ימים' },
   ]
 
   return (
     <GlassCard className="text-center space-y-4 py-6">
-      <p className="text-xs text-white/40 uppercase tracking-widest">המשחק הבא מתחיל בעוד</p>
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
-        {units.map(({ v, l }, i, arr) => (
-          <div key={l} className="flex items-center gap-2 sm:gap-4">
-            <div className="glass rounded-xl px-3 sm:px-5 py-3 min-w-[56px] text-center">
-              <div className="text-2xl sm:text-3xl font-bold font-mono tabular-nums">{pad(v)}</div>
-              <div className="text-[9px] sm:text-[10px] text-white/40 uppercase tracking-wider mt-0.5">{l}</div>
-            </div>
-            {i < arr.length - 1 && <span className="text-white/20 font-bold -mt-3 text-lg">:</span>}
-          </div>
-        ))}
-      </div>
       <div className="space-y-0.5">
         <p className="text-sm font-semibold text-white">{label}</p>
         <p className="text-xs text-white/40">{localDate(next.kickoff_utc)} · {localShortTime(next.kickoff_utc)} שעון מקומי</p>
+      </div>
+      <p className="text-sm text-white/50 uppercase tracking-widest">המשחק הבא מתחיל בעוד</p>
+      <div className="flex items-center justify-center gap-3 sm:gap-4">
+        {units.map(({ v, l }, i, arr) => (
+          <div key={l} className="flex items-center gap-3 sm:gap-4">
+            <GlassCard className="min-w-[72px] sm:min-w-[88px] py-4 text-center card-accent">
+              <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-white">
+                {pad(v)}
+              </div>
+              <div className="text-[10px] sm:text-xs text-white/50 tracking-widest mt-1">{l}</div>
+            </GlassCard>
+            {i < arr.length - 1 && <span className="text-2xl font-bold text-white/30 -mt-4">:</span>}
+          </div>
+        ))}
       </div>
     </GlassCard>
   )
