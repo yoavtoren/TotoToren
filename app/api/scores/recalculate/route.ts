@@ -40,11 +40,34 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Derive real group standings from completed group matches
-  const realGroupStandings = deriveGroupStandings(completedMatches as any[])
+  // Load manually-entered actual group standings (overrides auto-derived)
+  const { data: actualStandingsRows } = await admin
+    .from('group_actual_standings').select('*').order('position')
+  const actualStandingsMap: Record<string, number[]> = {}
+  for (const row of (actualStandingsRows ?? []) as any[]) {
+    if (!actualStandingsMap[row.group_letter]) actualStandingsMap[row.group_letter] = []
+    actualStandingsMap[row.group_letter][row.position - 1] = row.team_id
+  }
+  const derivedStandings = deriveGroupStandings(completedMatches as any[])
+  // Use manually-entered standings if available for a group, else fall back to derived
+  const realGroupStandings: Record<string, number[]> = {}
+  for (const g of Object.keys({ ...derivedStandings, ...actualStandingsMap })) {
+    realGroupStandings[g] = actualStandingsMap[g]?.filter(Boolean).length === 4
+      ? actualStandingsMap[g]
+      : derivedStandings[g] ?? []
+  }
 
-  // Build real advancement sets per knockout round
-  const realR32Teams = new Set(Object.values(knockoutWinnerIds).filter(Boolean) as number[])
+  // R32 participants = 1st+2nd from each group + qualified 3rd-place teams
+  const { data: thirdRows } = await admin.from('r32_third_place_qualifiers').select('team_id')
+  const qualifiedThirdIds = new Set((thirdRows ?? []).map((r: any) => r.team_id as number))
+  const r32Teams = new Set<number>()
+  for (const order of Object.values(realGroupStandings)) {
+    if (order[0]) r32Teams.add(order[0])
+    if (order[1]) r32Teams.add(order[1])
+  }
+  for (const id of qualifiedThirdIds) r32Teams.add(id)
+  // Also include any knockout match winners (for rounds beyond R32)
+  const realR32Teams = r32Teams.size > 0 ? r32Teams : new Set(Object.values(knockoutWinnerIds).filter(Boolean) as number[])
 
   // Load futures result
   const { data: futuresResultRow } = await admin

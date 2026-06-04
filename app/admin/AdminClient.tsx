@@ -12,11 +12,13 @@ const ROUND_LABELS: Record<string, string> = {
 const KNOCKOUT_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'third_place', 'final'] as const
 
 export default function AdminClient({
-  groupMatches, knockoutMatches, adminToken,
+  groupMatches, knockoutMatches, adminToken, actualStandings: initialStandings, thirdQualifiers: initialQualifiers,
 }: {
   groupMatches: Match[]
   knockoutMatches: Match[]
   adminToken: string
+  actualStandings: Record<string, number[]>
+  thirdQualifiers: number[]
 }) {
   const total = groupMatches.length + knockoutMatches.length
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>({})
@@ -31,6 +33,10 @@ export default function AdminClient({
     most_conceded_team_id: '', total_goals: '',
   })
   const [savingFutures, setSavingFutures] = useState(false)
+  const [standings, setStandings] = useState<Record<string, number[]>>(initialStandings)
+  const [savingStanding, setSavingStanding] = useState<string | null>(null)
+  const [thirdQualifiers, setThirdQualifiers] = useState<Set<number>>(new Set(initialQualifiers))
+  const [savingQualifiers, setSavingQualifiers] = useState(false)
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok })
@@ -186,6 +192,33 @@ export default function AdminClient({
     }
   }
 
+  async function handleSaveStanding(g: string) {
+    setSavingStanding(g)
+    const res = await fetch('/api/admin/save-group-standings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ group_letter: g, team_ids: standings[g] ?? [0,0,0,0] }),
+    })
+    setSavingStanding(null)
+    if (res.ok) showToast(`בית ${g} נשמר ✓`)
+    else showToast((await res.json()).error, false)
+  }
+
+  async function handleSaveQualifiers() {
+    setSavingQualifiers(true)
+    const ids = [...thirdQualifiers]
+    const res = await fetch('/api/admin/save-third-qualifiers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ team_ids: ids }),
+    })
+    setSavingQualifiers(false)
+    if (res.ok) showToast('קבוצות מקום שלישי נשמרו ✓')
+    else showToast((await res.json()).error, false)
+  }
+
+  const POSITION_LABELS = ['🥇 מקום 1', '🥈 מקום 2', '🥉 מקום 3', '4️⃣ מקום 4']
+
   const teamSelect = (key: keyof typeof futures, label: string) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <label style={{ fontSize: 12, fontWeight: 600, color: '#4a5568' }}>{label}</label>
@@ -303,6 +336,114 @@ export default function AdminClient({
             })}
           </section>
         )}
+
+        {/* Group Final Standings */}
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>
+            דירוג סופי — שלב הבתים
+          </h2>
+          <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+            הזן לאחר סיום כל 6 משחקי הבית. דירוג זה ישמש לניקוד חלק 2.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+            {GROUP_LETTERS.map(g => {
+              const groupTeams = TEAMS.filter(t => t.group_letter === g)
+              const gs = standings[g] ?? [0, 0, 0, 0]
+              const done = gs.filter(Boolean).length
+              return (
+                <div key={g} style={{ background: '#fff', borderRadius: 10, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>בית {g}</span>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: done === 4 ? '#c6f6d5' : '#e2e8f0', color: done === 4 ? '#276749' : '#718096' }}>
+                      {done}/4
+                    </span>
+                  </div>
+                  {POSITION_LABELS.map((label, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, width: 64, flexShrink: 0, color: '#718096' }}>{label}</span>
+                      <select
+                        value={gs[i] || ''}
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 0
+                          setStandings(p => {
+                            const arr = [...(p[g] ?? [0,0,0,0])]
+                            arr[i] = val
+                            return { ...p, [g]: arr }
+                          })
+                        }}
+                        style={{ flex: 1, padding: '4px 6px', borderRadius: 6, border: '1px solid #cbd5e0', fontSize: 12 }}
+                      >
+                        <option value="">— בחר —</option>
+                        {groupTeams.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {getFlagEmoji(t.flag_code)} {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => handleSaveStanding(g)}
+                    disabled={savingStanding === g}
+                    style={{ marginTop: 6, width: '100%', padding: '6px 0', borderRadius: 7, border: 'none', background: done === 4 ? '#3182ce' : '#a0aec0', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {savingStanding === g ? '…' : 'שמור בית ' + g}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* 3rd Place Qualifiers */}
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 1 }}>
+            קבוצות מקום שלישי שעלו לסבב 32
+          </h2>
+          <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+            בחר את 8 הקבוצות שסיימו 3רד ועלו לסבב 32 ({thirdQualifiers.size}/8 נבחרו).
+          </p>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8, marginBottom: 14 }}>
+              {GROUP_LETTERS.map(g => {
+                const pos3 = standings[g]?.[2]
+                const team = pos3 ? getTeamById(pos3) : null
+                if (!team) return (
+                  <div key={g} style={{ padding: '8px 12px', borderRadius: 8, background: '#f7fafc', border: '1px solid #e2e8f0', opacity: 0.5 }}>
+                    <span style={{ fontSize: 12, color: '#a0aec0' }}>בית {g} — הזן דירוג תחילה</span>
+                  </div>
+                )
+                const checked = thirdQualifiers.has(team.id)
+                return (
+                  <label key={g} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, border: `1px solid ${checked ? '#68d391' : '#e2e8f0'}`, background: checked ? '#f0fff4' : '#fafafa', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={e => setThirdQualifiers(prev => {
+                        const next = new Set(prev)
+                        if (e.target.checked) next.add(team.id)
+                        else next.delete(team.id)
+                        return next
+                      })}
+                    />
+                    <span style={{ fontSize: 16 }}>{getFlagEmoji(team.flag_code)}</span>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{team.name}</div>
+                      <div style={{ fontSize: 10, color: '#a0aec0' }}>בית {g}</div>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+            <button
+              onClick={handleSaveQualifiers}
+              disabled={savingQualifiers || thirdQualifiers.size !== 8}
+              style={{ padding: '8px 20px', borderRadius: 7, border: 'none', background: thirdQualifiers.size === 8 ? '#276749' : '#a0aec0', color: '#fff', fontSize: 13, fontWeight: 600, cursor: thirdQualifiers.size === 8 ? 'pointer' : 'not-allowed' }}
+            >
+              {savingQualifiers ? 'שומר…' : `💾 שמור (${thirdQualifiers.size}/8 נבחרו)`}
+            </button>
+          </div>
+        </section>
 
         {/* Futures Results */}
         <section style={{ marginTop: 24 }}>
