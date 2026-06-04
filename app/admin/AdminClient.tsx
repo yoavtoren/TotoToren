@@ -125,6 +125,15 @@ export default function AdminClient({
     const av = sc?.away !== undefined ? sc.away : (hasResult ? String(m.away_score) : '')
     const canSave = sc?.home !== undefined && sc?.away !== undefined && sc.home !== '' && sc.away !== ''
 
+    // Live result label
+    const h = hv !== '' ? parseInt(hv) : null
+    const a = av !== '' ? parseInt(av) : null
+    const resultLabel = (h !== null && a !== null && !isNaN(h) && !isNaN(a))
+      ? h > a ? { text: `${home?.name ?? 'Home'} wins`, color: '#276749', bg: '#c6f6d5' }
+      : a > h ? { text: `${away?.name ?? 'Away'} wins`, color: '#c53030', bg: '#fed7d7' }
+      : { text: 'Tie (X)', color: '#744210', bg: '#fefcbf' }
+      : null
+
     return (
       // dir="ltr" matches the predict page — Home LEFT : Away RIGHT, same as users see
       <div key={m.id} dir="ltr" style={{
@@ -161,6 +170,11 @@ export default function AdminClient({
             placeholder="–"
             style={{ width: 44, padding: '5px 4px', border: '1px solid #e53e3e', borderRadius: 6, fontSize: 14, textAlign: 'center', fontFamily: 'monospace' }}
           />
+          {resultLabel && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: resultLabel.color, background: resultLabel.bg, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
+              {resultLabel.text}
+            </span>
+          )}
         </div>
 
         {/* Away team — "2" in 1X2 */}
