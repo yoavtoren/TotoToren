@@ -811,14 +811,22 @@ export default function AdminClient({
 
                 {tiers.map(({ stage, label, pts }) => {
                   const ms = knockoutMatches.filter(m => m.stage === stage)
-                  const ids = ms.map(winnerOf).filter(Boolean) as number[]
+                  const matchIds = ms.map(winnerOf).filter(Boolean) as number[]
+                  // stage 'r32' winners → stored as stageTeams.r16, 'r16' → .qf, etc.
+                  const stageKey = ({ r32:'r16', r16:'qf', qf:'sf', sf:'final', final:'champion' } as Record<string,string>)[stage]
+                  const manualIds = stageKey && stageTeams[stageKey as keyof typeof stageTeams]?.size > 0
+                    ? [...stageTeams[stageKey as keyof typeof stageTeams]] : []
+                  const ids = matchIds.length > 0 ? matchIds : manualIds
+                  const isManual = matchIds.length === 0 && manualIds.length > 0
                   return (
                     <div key={stage} style={{ background: '#fff', borderRadius: 10, padding: '12px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: ids.length > 0 ? 10 : 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: ids.length === ms.length && ms.length > 0 ? '#c6f6d5' : '#e2e8f0', color: ids.length === ms.length && ms.length > 0 ? '#276749' : '#718096' }}>
-                            {ids.length}/{ms.length}
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600,
+                            background: ids.length > 0 ? '#c6f6d5' : '#e2e8f0',
+                            color: ids.length > 0 ? '#276749' : '#718096' }}>
+                            {ids.length}{isManual ? ' ידני' : `/${ms.length}`}
                           </span>
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#3182ce', background: '#ebf8ff', padding: '3px 10px', borderRadius: 20 }}>
