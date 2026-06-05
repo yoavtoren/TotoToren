@@ -72,6 +72,17 @@ export default function AdminClient({
     else showToast(data.error, false)
   }
 
+  const [resettingAll, setResettingAll] = useState(false)
+  async function handleResetAll() {
+    if (!confirm('⚠️ אפס את כל תוצאות המשחקים, הדירוגים והניקוד?\n\nלא ניתן לביטול!')) return
+    setResettingAll(true)
+    const res = await fetch('/api/admin/reset-all', { method: 'POST', headers: authHeaders })
+    const data = await res.json()
+    setResettingAll(false)
+    if (res.ok) { showToast(data.message ?? '✓ אופס'); window.location.reload() }
+    else showToast(data.error, false)
+  }
+
   async function handleSave(matchId: number) {
     const s = scores[matchId]
     if (!s?.home || !s?.away) return
@@ -376,6 +387,10 @@ export default function AdminClient({
           <button onClick={handleSync} disabled={syncing}
             style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #4a5568', background: 'transparent', color: '#e2e8f0', cursor: syncing ? 'not-allowed' : 'pointer', fontSize: 13 }}>
             {syncing ? 'מסנכרן…' : '🔄 סנכרן לוח'}
+          </button>
+          <button onClick={handleResetAll} disabled={resettingAll}
+            style={{ padding: '6px 14px', borderRadius: 7, border: '2px solid #e53e3e', background: 'transparent', color: '#feb2b2', cursor: resettingAll ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}>
+            {resettingAll ? 'מאפס…' : '🗑 אפס הכל'}
           </button>
           <button onClick={handleLogout}
             style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: '#e53e3e', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
