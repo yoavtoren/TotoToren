@@ -36,6 +36,7 @@ interface Profile {
 interface UserPreds {
   groupMatches: Record<number, { predicted_home: number; predicted_away: number }>
   groupStandings: Record<string, number[]>
+  thirdPlace: number[]  // team IDs user selected as 3rd-place R32 qualifiers
   knockout: Array<{ match_num: number; predicted_winner_id: number; predicted_home_score: number | null; predicted_away_score: number | null }>
   futures: { champion_team_id: number | null; top_scorer_team_id: number | null; golden_boot_team_id: number | null; most_conceded_team_id: number | null; total_goals_prediction: number | null } | null
 }
@@ -109,6 +110,7 @@ function UserPredictionsModal({
   loading,
   onClose,
   completedMatchIds = new Set(),
+  realR32TeamIds = new Set(),
 }: {
   profile: Profile | null
   entry: ScoreEntry | null
@@ -116,8 +118,10 @@ function UserPredictionsModal({
   loading: boolean
   onClose: () => void
   completedMatchIds?: Set<number>
+  realR32TeamIds?: Set<number>
 }) {
   const [modalTab, setModalTab] = useState<'predictions' | 'scoring'>('predictions')
+  const [r32Open, setR32Open] = useState(false)
   const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
 
   const nextMatchId = useMemo(() => {
@@ -336,6 +340,63 @@ function UserPredictionsModal({
                   </div>
                 </div>
               )}
+
+              {/* ── R32 advancement breakdown ─────────────── */}
+              {realR32TeamIds.size > 0 && preds && (() => {
+                // User's predicted R32: top-2 per group + 3rd-place selections
+                const predR32 = new Set<number>()
+                for (const teams of Object.values(preds.groupStandings)) {
+                  if (teams[0]) predR32.add(teams[0])
+                  if (teams[1]) predR32.add(teams[1])
+                }
+                for (const id of preds.thirdPlace ?? []) predR32.add(id)
+                const correct = [...predR32].filter(id => realR32TeamIds.has(id))
+                const wrong   = [...predR32].filter(id => !realR32TeamIds.has(id))
+                const pts = correct.length * 4
+                return (
+                  <div className="glass rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setR32Open(o => !o)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-white/70">פירוט התקדמות לסבב 32</span>
+                        <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full font-mono">
+                          {correct.length}/{predR32.size} נכון · +{pts} נק׳
+                        </span>
+                      </div>
+                      <span className="text-white/30 text-xs">{r32Open ? '▲' : '▼'}</span>
+                    </button>
+                    {r32Open && (
+                      <div className="px-3 pb-3 space-y-1 border-t border-white/10 pt-2">
+                        <p className="text-[10px] text-white/30 mb-1.5">נבחרות שניחשת שיגיעו לסבב 32:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[...correct].map(id => {
+                            const t = getTeamById(id)
+                            return t ? (
+                              <div key={id} className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-1 text-[11px]">
+                                <span>{getFlagEmoji(t.flag_code)}</span>
+                                <span className="text-emerald-200 font-medium">{t.name}</span>
+                                <span className="text-emerald-400 font-bold">✓ +4</span>
+                              </div>
+                            ) : null
+                          })}
+                          {[...wrong].map(id => {
+                            const t = getTeamById(id)
+                            return t ? (
+                              <div key={id} className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2 py-1 text-[11px]">
+                                <span>{getFlagEmoji(t.flag_code)}</span>
+                                <span className="text-rose-300/70">{t.name}</span>
+                                <span className="text-rose-400/70">✗</span>
+                              </div>
+                            ) : null
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               {/* ── Group standings predictions ───────────── */}
               {Object.keys(preds.groupStandings).length > 0 && (
@@ -667,9 +728,10 @@ function BrowseSection({ profiles }: { profiles: Profile[] }) {
     setLoading(true)
     setUserPreds(null)
     const supabase = createClient()
-    const [gm, gs, ko, fut] = await Promise.all([
+    const [gm, gs, tp, ko, fut] = await Promise.all([
       supabase.from('group_match_predictions').select('*').eq('user_id', userId),
       supabase.from('group_predictions').select('*').eq('user_id', userId).order('predicted_position'),
+      supabase.from('third_place_selections').select('team_id').eq('user_id', userId),
       supabase.from('knockout_predictions').select('*').eq('user_id', userId),
       supabase.from('futures_predictions').select('*').eq('user_id', userId).maybeSingle(),
     ])
@@ -686,6 +748,7 @@ function BrowseSection({ profiles }: { profiles: Profile[] }) {
     setUserPreds({
       groupMatches,
       groupStandings,
+      thirdPlace: (tp.data ?? []).map((r: any) => r.team_id),
       knockout: (ko.data ?? []) as UserPreds['knockout'],
       futures: (fut.data as any) ?? null,
     })
@@ -932,11 +995,13 @@ export default function LeaderboardClient({
   allProfiles,
   initialFutures,
   completedMatchIds = new Set(),
+  realR32TeamIds = new Set(),
 }: {
   initialScores: ScoreEntry[]
   allProfiles: Profile[]
   initialFutures: FuturePred[]
   completedMatchIds?: Set<number>
+  realR32TeamIds?: Set<number>
 }) {
   const [scores, setScores] = useState(initialScores)
   const [profiles, setProfiles] = useState(allProfiles)
@@ -954,9 +1019,10 @@ export default function LeaderboardClient({
     setModalLoading(true)
     setModalPreds(null)
     const supabase = createClient()
-    const [gm, gs, ko, fut] = await Promise.all([
+    const [gm, gs, tp, ko, fut] = await Promise.all([
       supabase.from('group_match_predictions').select('*').eq('user_id', userId),
       supabase.from('group_predictions').select('*').eq('user_id', userId).order('predicted_position'),
+      supabase.from('third_place_selections').select('team_id').eq('user_id', userId),
       supabase.from('knockout_predictions').select('*').eq('user_id', userId),
       supabase.from('futures_predictions').select('*').eq('user_id', userId).maybeSingle(),
     ])
@@ -970,6 +1036,7 @@ export default function LeaderboardClient({
     setModalPreds({
       groupMatches,
       groupStandings,
+      thirdPlace: (tp.data ?? []).map((r: any) => r.team_id),
       knockout: (ko.data ?? []) as UserPreds['knockout'],
       futures: (fut.data as any) ?? null,
     })
@@ -1124,6 +1191,7 @@ export default function LeaderboardClient({
         loading={modalLoading}
         onClose={() => { setModalUserId(null); setModalPreds(null) }}
         completedMatchIds={completedMatchIds}
+        realR32TeamIds={realR32TeamIds}
       />
     )}
   </>
