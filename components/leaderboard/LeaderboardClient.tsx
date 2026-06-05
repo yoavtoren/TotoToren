@@ -66,11 +66,22 @@ function localShortDt(utc: string) {
 
 // ── Sub-components ────────────────────────────────────────────
 
-function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
+function Avatar({ name, url, size = 'md' }: { name: string; url?: string | null; size?: 'sm' | 'md' }) {
+  const dim = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'
+  if (url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url} alt={name}
+        className={cn('rounded-full object-cover shrink-0', dim)}
+        onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+      />
+    )
+  }
   return (
     <div className={cn(
       'rounded-full glass flex items-center justify-center font-bold text-white/70 shrink-0',
-      size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'
+      dim
     )}>
       {name[0]?.toUpperCase() ?? '?'}
     </div>
@@ -164,7 +175,7 @@ function UserPredictionsModal({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10 shrink-0">
-          <Avatar name={profile?.display_name ?? '?'} />
+          <Avatar name={profile?.display_name ?? '?'} url={profile?.avatar_url} />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-white text-base truncate">{profile?.display_name ?? '…'}</p>
             {entry && (
@@ -869,7 +880,7 @@ function StandingsSection({
           >
             <div className="flex items-center gap-2">
               <span className="text-xl w-8 text-center shrink-0">{medal}</span>
-              <Avatar name={entry.profiles?.display_name ?? '?'} />
+              <Avatar name={entry.profiles?.display_name ?? '?'} url={entry.profiles?.avatar_url} />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-white truncate text-sm flex items-center gap-1.5 hover:underline underline-offset-2">
                   {entry.profiles?.display_name ?? 'לא ידוע'}
@@ -1097,7 +1108,7 @@ function BrowseSection({ profiles }: { profiles: Profile[] }) {
                 selectedId === p.id ? 'bg-white/15 border border-white/20' : 'glass hover:bg-white/10'
               )}
             >
-              <Avatar name={p.display_name} size="sm" />
+              <Avatar name={p.display_name} url={p.avatar_url} size="sm" />
               <span className="text-sm text-white font-medium truncate">{p.display_name}</span>
               {selectedId === p.id && <span className="ml-auto text-white/40 text-xs">▶</span>}
             </button>
