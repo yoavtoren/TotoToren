@@ -651,6 +651,14 @@ export default function AdminClient({
             { stage: 'sf',    label: 'עלו לגמר',           pts: 8 },
             { stage: 'final', label: 'אלוף',               pts: 15 },
           ]
+          // Auto-derive R32 qualifiers: 1st + 2nd from each group with entered standings
+          const r32Auto: number[] = []
+          for (const g of GROUP_LETTERS) {
+            const order = standings[g] ?? []
+            if (order[0]) r32Auto.push(order[0])
+            if (order[1]) r32Auto.push(order[1])
+          }
+
           return (
             <section style={{ marginTop: 24 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -660,6 +668,37 @@ export default function AdminClient({
                 מחושב אוטומטית. ניקוד לכל נבחרת שניחשת נכון.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                {/* ── R32 qualifiers — AUTO from group standings ── */}
+                <div style={{ background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: 10, padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r32Auto.length > 0 ? 10 : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>שלב 32 — מקומות 1+2 בכל בית</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: r32Auto.length === 24 ? '#c6f6d5' : '#e2e8f0', color: r32Auto.length === 24 ? '#276749' : '#718096' }}>
+                        {r32Auto.length}/24 אוטומטי
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#2b6cb0', background: '#bee3f8', padding: '3px 10px', borderRadius: 20 }}>
+                      +4 נק׳ לכל נבחרת נכונה
+                    </span>
+                  </div>
+                  {r32Auto.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {r32Auto.map(id => {
+                        const t = getTeamById(id)
+                        return t ? (
+                          <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fff', border: '1px solid #bee3f8', borderRadius: 7, padding: '4px 8px' }}>
+                            <span style={{ fontSize: 16 }}>{getFlagEmoji(t.flag_code)}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600 }}>{t.name}</span>
+                          </div>
+                        ) : null
+                      })}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 12, color: '#90cdf4' }}>— הזן דירוגי בתים למעלה —</span>
+                  )}
+                </div>
+
                 {tiers.map(({ stage, label, pts }) => {
                   const ms = knockoutMatches.filter(m => m.stage === stage)
                   const ids = ms.map(winnerOf).filter(Boolean) as number[]
