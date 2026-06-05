@@ -323,11 +323,11 @@ export default function PredictClient({
         />
       </SectionWrapper>
 
-      {/* Floating save button — fixed top-left always visible */}
+      {/* Floating save button — fixed bottom-center */}
       {!isLocked && (
-        <div className="fixed top-20 left-4 z-50">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}
-            className="shadow-2xl">
+            className="shadow-2xl px-8 py-3 text-base rounded-2xl">
             {saving ? 'שומר…' : '💾 שמור ניחושים'}
           </GlassButton>
         </div>

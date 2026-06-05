@@ -14,7 +14,7 @@
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    overflow-x: hidden;
+    overflow-x: clip;
     color: #f0f5f1;
     font-family: var(--font-inter), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
