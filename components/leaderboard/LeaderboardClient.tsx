@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getFlagEmoji, getTeamById } from '@/data/teams'
+import { getFlagEmoji, getTeamById, getTeamIdByName } from '@/data/teams'
 import { GROUP_MATCHES, GROUP_MATCHES_BY_GROUP } from '@/data/match-schedule'
 import GlassCard from '@/components/ui/GlassCard'
 import { cn } from '@/lib/utils'
@@ -1002,69 +1002,102 @@ function StatsSection({
     const awayWins = preds.filter(p => p.predicted_home < p.predicted_away).length
     const total    = preds.length
     const leaderPred = firstPlaceUserId ? preds.find(p => p.user_id === firstPlaceUserId) : null
+
+    const homeTeam = getTeamById(getTeamIdByName(m.home) ?? 0)
+    const awayTeam = getTeamById(getTeamIdByName(m.away) ?? 0)
+    const homePct  = total > 0 ? Math.round(homeWins / total * 100) : 0
+    const tiePct   = total > 0 ? Math.round(ties     / total * 100) : 0
+    const awayPct  = total > 0 ? Math.round(awayWins / total * 100) : 0
+
     return (
-      <GlassCard key={m.match} className="space-y-3">
-        <div className="flex items-center gap-2">
-          {isLive
-            ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Live</span>
-            : <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-bold tracking-wider">הבא ▶ {localShortDt(m.kickoff_utc)}</span>
-          }
-          <p className="text-sm font-semibold text-white">{m.home} נגד {m.away}</p>
+      <GlassCard key={m.match} className="space-y-4">
+
+        {/* Header: badge + teams */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {isLive
+              ? <span className="text-xs bg-emerald-500/25 text-emerald-300 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">🔴 Live</span>
+              : <span className="text-xs bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full font-semibold">הבא ▶ {localShortDt(m.kickoff_utc)}</span>
+            }
+          </div>
+          <p className="text-[10px] text-white/35 font-mono">בית {(m as any).group} · משחק {m.match}</p>
         </div>
 
-        {/* Outcome distribution — single stacked bar */}
+        {/* Teams row */}
+        <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center gap-2 flex-1 justify-end">
+            <span className="text-base font-semibold text-white">{m.home}</span>
+            {homeTeam && <span className="text-3xl">{getFlagEmoji(homeTeam.flag_code)}</span>}
+          </div>
+          <span className="text-white/30 text-sm font-bold shrink-0">נגד</span>
+          <div className="flex items-center gap-2 flex-1 justify-start">
+            {awayTeam && <span className="text-3xl">{getFlagEmoji(awayTeam.flag_code)}</span>}
+            <span className="text-base font-semibold text-white">{m.away}</span>
+          </div>
+        </div>
+
+        {/* Stacked bar */}
         <div className="space-y-2">
-          <p className="text-[10px] text-white/40 uppercase tracking-wider">
+          <p className="text-[11px] text-white/40 uppercase tracking-wider text-center">
             התפלגות ניחושים{total > 0 ? ` · ${total} משתתפים` : ''}
           </p>
           {total === 0 ? (
-            <div className="h-3 bg-white/10 rounded-full" />
+            <div className="h-4 bg-white/10 rounded-full" />
           ) : (
-            <div className="h-3 rounded-full overflow-hidden flex">
-              {homeWins > 0 && <div className="h-full bg-blue-500/70"  style={{ width: `${homeWins / total * 100}%` }} />}
-              {ties     > 0 && <div className="h-full bg-amber-500/70" style={{ width: `${ties     / total * 100}%` }} />}
-              {awayWins > 0 && <div className="h-full bg-rose-500/70"  style={{ width: `${awayWins / total * 100}%` }} />}
+            <div className="h-4 rounded-full overflow-hidden flex">
+              {homeWins > 0 && <div className="h-full bg-blue-500/70"  style={{ width: `${homePct}%` }} />}
+              {ties     > 0 && <div className="h-full bg-amber-500/70" style={{ width: `${tiePct}%`  }} />}
+              {awayWins > 0 && <div className="h-full bg-rose-500/70"  style={{ width: `${awayPct}%` }} />}
             </div>
           )}
           {/* Legend */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
-            {[
-              { label: `${m.home} (1)`, count: homeWins, dot: 'bg-blue-500/70',  text: 'text-blue-300' },
-              { label: 'תיקו (X)',      count: ties,     dot: 'bg-amber-500/70', text: 'text-amber-300' },
-              { label: `${m.away} (2)`, count: awayWins, dot: 'bg-rose-500/70',  text: 'text-rose-300' },
-            ].map(({ label, count, dot, text }) => (
-              <div key={label} className="flex items-center gap-1.5 text-xs">
-                <div className={cn('w-2.5 h-2.5 rounded-sm shrink-0', dot)} />
-                <span className={cn('truncate', text)}>{label}</span>
-                <span className="text-white/40 font-mono tabular-nums">
-                  {count}{total > 0 ? ` · ${Math.round(count / total * 100)}%` : ''}
-                </span>
-              </div>
-            ))}
+          <div className="flex justify-between gap-2 text-sm">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-blue-500/70 shrink-0" />
+              {homeTeam && <span className="text-base leading-none">{getFlagEmoji(homeTeam.flag_code)}</span>}
+              <span className="text-blue-200 font-semibold">{homeWins}</span>
+              <span className="text-white/40 text-xs">({homePct}%)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-amber-500/70 shrink-0" />
+              <span className="text-amber-200 font-semibold">תיקו {ties}</span>
+              <span className="text-white/40 text-xs">({tiePct}%)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-rose-500/70 shrink-0" />
+              {awayTeam && <span className="text-base leading-none">{getFlagEmoji(awayTeam.flag_code)}</span>}
+              <span className="text-rose-200 font-semibold">{awayWins}</span>
+              <span className="text-white/40 text-xs">({awayPct}%)</span>
+            </div>
           </div>
         </div>
 
         {/* Leader highlight — "היילייט פתיחת עין" */}
         {leaderPred && (
-          <div className="glass rounded-xl px-3 py-2.5 border border-yellow-400/30 bg-yellow-500/5 space-y-1.5">
-            <p className="text-[10px] text-yellow-400/80 font-bold uppercase tracking-wider">
+          <div className="rounded-xl px-4 py-3 border border-yellow-400/25 bg-yellow-500/8 space-y-2">
+            <p className="text-xs text-yellow-400/70 font-bold uppercase tracking-wider">
               👁 היילייט פתיחת עין · {firstPlaceDisplayName} (מקום 1)
             </p>
-            <div className="flex items-center gap-4">
-              <span className="font-mono font-bold text-white text-2xl tabular-nums" dir="ltr">
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-mono font-extrabold text-white text-4xl tabular-nums" dir="ltr">
                 {leaderPred.predicted_home} : {leaderPred.predicted_away}
               </span>
-              <div className="space-y-0.5 text-xs">
-                <div className="text-white/60">
-                  שערים: <span className="text-white font-bold">{leaderPred.predicted_home + leaderPred.predicted_away}</span>
+              <div className="space-y-1 text-sm text-right">
+                <div className="text-white/50">
+                  סה&quot;כ שערים: <span className="text-white font-bold text-base">{leaderPred.predicted_home + leaderPred.predicted_away}</span>
                 </div>
-                <div>
-                  {leaderPred.predicted_home > leaderPred.predicted_away
-                    ? <span className="text-blue-300 font-semibold">{m.home} מנצחת</span>
-                    : leaderPred.predicted_home < leaderPred.predicted_away
-                      ? <span className="text-rose-300 font-semibold">{m.away} מנצחת</span>
-                      : <span className="text-amber-300 font-semibold">תיקו</span>
-                  }
+                <div className="font-semibold text-base">
+                  {leaderPred.predicted_home > leaderPred.predicted_away ? (
+                    <span className="text-blue-300">
+                      {homeTeam && getFlagEmoji(homeTeam.flag_code)} {m.home} מנצחת
+                    </span>
+                  ) : leaderPred.predicted_home < leaderPred.predicted_away ? (
+                    <span className="text-rose-300">
+                      {awayTeam && getFlagEmoji(awayTeam.flag_code)} {m.away} מנצחת
+                    </span>
+                  ) : (
+                    <span className="text-amber-300">תיקו 🤝</span>
+                  )}
                 </div>
               </div>
             </div>
