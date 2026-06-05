@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { computeAdminToken, ADMIN_COOKIE } from '@/lib/admin-auth'
-import { scoreGroupStandings, scoreFutures, scoreAdvancement, type FuturesPredictionInput, type FuturesResult } from '@/lib/scoring'
+import { scoreGroupStandings, scoreKnockoutMatch, scoreFutures, scoreAdvancement, type FuturesPredictionInput, type FuturesResult } from '@/lib/scoring'
 import { SCORING } from '@/lib/scoring.config'
 import { KNOCKOUT_MATCHES } from '@/data/match-schedule'
 
@@ -215,15 +215,22 @@ export async function POST(request: NextRequest) {
     if (stageQual.champion?.size > 0) advancementPts += scoreAdvancement(predChampion, stageQual.champion, 'ADV_FINAL')
 
     // 6.4 Knockout scorelines
+    // 6.4 Knockout scorelines — side-independent (1:0 home = 0:1 away = same scoreline)
     let koScorePts = 0
     for (const pred of userKO) {
       const real = knockoutMatchResults[pred.match_num]
       if (!real) continue
+      // Total goals (+2): independent field, exact side doesn't matter
       if (pred.predicted_total_goals != null && pred.predicted_total_goals === real.home + real.away)
         koScorePts += SCORING.KO_TOTAL_GOALS
-      if (pred.predicted_home_score != null && pred.predicted_away_score != null &&
-          pred.predicted_home_score === real.home && pred.predicted_away_score === real.away)
-        koScorePts += SCORING.KO_EXACT
+      // Exact scoreline (+3): side-irrelevant — 1:0 matches 0:1 and vice versa
+      if (pred.predicted_home_score != null && pred.predicted_away_score != null) {
+        const pLo = Math.min(pred.predicted_home_score, pred.predicted_away_score)
+        const pHi = Math.max(pred.predicted_home_score, pred.predicted_away_score)
+        const rLo = Math.min(real.home, real.away)
+        const rHi = Math.max(real.home, real.away)
+        if (pLo === rLo && pHi === rHi) koScorePts += SCORING.KO_EXACT
+      }
     }
 
     // 6.5 Futures
