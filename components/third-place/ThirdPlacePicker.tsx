@@ -73,7 +73,7 @@ export default function ThirdPlacePicker({
           <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">שלב 1 — אילו 8 מתוך 12 עוברות?</p>
           <p className="text-sm text-white/60">כל בית מייצר נבחרת אחת שסיימה במקום שלישי — 12 בסך הכל. הן מדורגות ביניהן לפי:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-white/60">
-            {[['1','נקודות בשלב הבתים'],['2','הפרש שערים'],['3','שערים שבוקעו'],['4','ציון הגינות (כרטיסים)'],['5','דירוג FIFA']].map(([n, rule]) => (
+            {[['1','נקודות בשלב הבתים'],['2','הפרש שערים'],['3','שערים שבוקעו'],['4','ציון הגינות (כרטיסים)']].map(([n, rule]) => (
               <div key={n} className="flex items-center gap-2 glass rounded-lg px-3 py-1.5">
                 <span className="text-indigo-400 font-bold w-3">{n}.</span>
                 <span>{rule}</span>
@@ -94,45 +94,6 @@ export default function ThirdPlacePicker({
           <p className="text-sm text-amber-300/80 font-medium">
             ↳ בניחוש: בחר את 8 הבתים שניחשת שיעברו, ולפי הטבלה של FIFA — הצב כל אחד במיקום הנכון.
           </p>
-        </div>
-
-        {/* Per-group eligible slots reference */}
-        <div className="space-y-2 border-t border-white/10 pt-3">
-          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">טבלת עזר — לאיזה משבצות יכול כל בית להגיע?</p>
-          <p className="text-xs text-white/40">בהתאם לאיזה 8 בתים עוברים, כל בית יכול להגיע רק למשבצות הבאות:</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-            {GROUP_LETTERS.map(g => {
-              const slots = GROUP_ELIGIBLE_SLOTS[g]
-              const forced = slots.length === 1
-              return (
-                <div key={g} className={cn(
-                  'rounded-lg px-2.5 py-2 text-xs',
-                  forced ? 'bg-amber-500/15 border border-amber-400/30' : 'bg-white/5 border border-white/8'
-                )}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className={cn(
-                      'font-bold font-mono px-1 py-0.5 rounded text-[10px]',
-                      forced ? 'bg-amber-400/20 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'
-                    )}>בית {g}</span>
-                    {forced && <span className="text-amber-400/70 text-[9px] font-semibold">קבוע!</span>}
-                  </div>
-                  {slots.length === 0 ? (
-                    <span className="text-white/20 text-[10px]">לא זכאי</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {slots.map(m => (
-                        <span key={m} className={cn(
-                          'font-mono text-[10px] px-1.5 py-0.5 rounded font-semibold',
-                          forced ? 'bg-amber-400/20 text-amber-200' : 'bg-white/8 text-white/50'
-                        )}>M{m}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-          <p className="text-[11px] text-white/30">המשבצת המדויקת בתוך האפשריות נקבעת לפי שילוב הבתים שעברו.</p>
         </div>
 
         {/* How FIFA decides the crossings */}
