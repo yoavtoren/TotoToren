@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
     .select('user_id,match_num,predicted_winner_id,predicted_home_score,predicted_away_score,predicted_total_goals')
   const { data: futurePreds, error: fpErr    } = await admin.from('futures_predictions')
     .select('user_id,champion_team_id,top_scorer_team_id,golden_boot_team_id,most_conceded_team_id,total_goals_prediction')
+  const { data: thirdSelPreds } = await admin.from('third_place_selections')
+    .select('user_id,team_id')
 
   // Return errors so we can diagnose
   const loadErrors = [
@@ -96,17 +98,25 @@ export async function POST(request: NextRequest) {
   ].filter(Boolean)
   if (loadErrors.length > 0) return NextResponse.json({ error: loadErrors.join('; ') }, { status: 500 })
 
-  const allGM  = (gmPreds     ?? []) as any[]
-  const allGP  = (gpPreds     ?? []) as any[]
-  const allKO  = (koPreds     ?? []) as any[]
-  const allFut = (futurePreds ?? []) as any[]
+  const allGM    = (gmPreds       ?? []) as any[]
+  const allGP    = (gpPreds       ?? []) as any[]
+  const allKO    = (koPreds       ?? []) as any[]
+  const allFut   = (futurePreds   ?? []) as any[]
+  const allThird = (thirdSelPreds ?? []) as any[]
+
+  // Pre-build: which stage does each knockout match belong to (for advancement filtering)
+  const KNOCKOUT_STAGES: Record<string, string> = {}
+  for (const m of completedMatches as any[]) {
+    if (m.stage !== 'group') KNOCKOUT_STAGES[m.id] = m.stage
+  }
 
   // ── 6. Score each user ────────────────────────────────────────
   const scoreRows = (profiles ?? []).map((p: { id: string }) => {
     const uid = p.id
-    const userGM = allGM.filter((r: any) => r.user_id === uid)
-    const userGP = allGP.filter((r: any) => r.user_id === uid)
-    const userKO = allKO.filter((r: any) => r.user_id === uid)
+    const userGM    = allGM.filter((r: any) => r.user_id === uid)
+    const userGP    = allGP.filter((r: any) => r.user_id === uid)
+    const userKO    = allKO.filter((r: any) => r.user_id === uid)
+    const userThird = allThird.filter((r: any) => r.user_id === uid)
 
     // 6.1 Group match — 1X2 (+1), total goals (+2), exact score (+3) — each independent
     let groupMatchPts = 0
@@ -140,12 +150,62 @@ export async function POST(request: NextRequest) {
       groupStandingPts += scoreGroupStandings(predOrder, realOrder)
     }
 
-    // 6.3 Advancement
-    const predWinnerIds = new Set(userKO.map((r: any) => r.predicted_winner_id as number))
-    let advancementPts = scoreAdvancement(predWinnerIds, realR32Teams, 'ADV_R32')
-    for (const [tier, stage] of [['ADV_R16','r16'],['ADV_QF','qf'],['ADV_SF','sf'],['ADV_FINAL','final']] as const) {
-      advancementPts += scoreAdvancement(predWinnerIds, stageQual[stage].size > 0 ? stageQual[stage] : new Set(Object.values(knockoutWinnerIds)), tier)
+    // 6.3 Advancement scoring
+    // ADV_R32 (+4): user's predicted R32 participants = 1st+2nd from each group they predicted
+    //               + their third-place selections
+    const predR32Teams = new Set<number>()
+    for (const g of [...new Set(userGP.map((r: any) => r.group_letter as string))]) {
+      const ordered = userGP.filter((r: any) => r.group_letter === g)
+        .sort((a: any, b: any) => a.predicted_position - b.predicted_position)
+      if (ordered[0]) predR32Teams.add(ordered[0].team_id)
+      if (ordered[1]) predR32Teams.add(ordered[1].team_id)
     }
+    for (const t of userThird) predR32Teams.add(t.team_id)
+
+    // ADV_R16 (+5): teams the user predicted to WIN their R32 match
+    const predR16Teams = new Set(
+      userKO.filter((r: any) => KNOCKOUT_STAGES[r.match_num] === 'r32')
+            .map((r: any) => r.predicted_winner_id as number).filter(Boolean)
+    )
+    // ADV_QF (+6): teams predicted to WIN R16
+    const predQFTeams = new Set(
+      userKO.filter((r: any) => KNOCKOUT_STAGES[r.match_num] === 'r16')
+            .map((r: any) => r.predicted_winner_id as number).filter(Boolean)
+    )
+    // ADV_SF (+7): teams predicted to WIN QF
+    const predSFTeams = new Set(
+      userKO.filter((r: any) => KNOCKOUT_STAGES[r.match_num] === 'qf')
+            .map((r: any) => r.predicted_winner_id as number).filter(Boolean)
+    )
+    // ADV_FINAL (+8): teams predicted to WIN SF (reach the final)
+    const predFinalTeams = new Set(
+      userKO.filter((r: any) => KNOCKOUT_STAGES[r.match_num] === 'sf')
+            .map((r: any) => r.predicted_winner_id as number).filter(Boolean)
+    )
+
+    // Real advancement sets per tier
+    const realR16Teams = stageQual.r16.size > 0 ? stageQual.r16
+      : new Set(completedMatches.filter((m: any) => m.stage === 'r32' && m.home_score !== null)
+          .map((m: any) => m.home_score > m.away_score ? m.home_team_id : m.away_score > m.home_score ? m.away_team_id : null)
+          .filter(Boolean) as number[])
+    const realQFTeams = stageQual.qf.size > 0 ? stageQual.qf
+      : new Set(completedMatches.filter((m: any) => m.stage === 'r16' && m.home_score !== null)
+          .map((m: any) => m.home_score > m.away_score ? m.home_team_id : m.away_score > m.home_score ? m.away_team_id : null)
+          .filter(Boolean) as number[])
+    const realSFTeams = stageQual.sf.size > 0 ? stageQual.sf
+      : new Set(completedMatches.filter((m: any) => m.stage === 'qf' && m.home_score !== null)
+          .map((m: any) => m.home_score > m.away_score ? m.home_team_id : m.away_score > m.home_score ? m.away_team_id : null)
+          .filter(Boolean) as number[])
+    const realFinalTeams = stageQual.final.size > 0 ? stageQual.final
+      : new Set(completedMatches.filter((m: any) => m.stage === 'sf' && m.home_score !== null)
+          .map((m: any) => m.home_score > m.away_score ? m.home_team_id : m.away_score > m.home_score ? m.away_team_id : null)
+          .filter(Boolean) as number[])
+
+    let advancementPts = scoreAdvancement(predR32Teams,    realR32Teams,    'ADV_R32')
+    advancementPts    += scoreAdvancement(predR16Teams,    realR16Teams,    'ADV_R16')
+    advancementPts    += scoreAdvancement(predQFTeams,     realQFTeams,     'ADV_QF')
+    advancementPts    += scoreAdvancement(predSFTeams,     realSFTeams,     'ADV_SF')
+    advancementPts    += scoreAdvancement(predFinalTeams,  realFinalTeams,  'ADV_FINAL')
 
     // 6.4 Knockout scorelines
     let koScorePts = 0
