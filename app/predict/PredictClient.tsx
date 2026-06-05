@@ -325,13 +325,28 @@ export default function PredictClient({
 
       {/* Floating save button — fixed top-left always visible */}
       {!isLocked && (
-        <div className="fixed top-20 left-4 z-50 flex flex-col items-start gap-1">
+        <div className="fixed top-20 left-4 z-50">
           <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}
             className="shadow-2xl">
             {saving ? 'שומר…' : '💾 שמור ניחושים'}
           </GlassButton>
-          {saveError && <p className="text-xs text-red-400 bg-black/60 rounded px-2 py-0.5 max-w-[180px]">{saveError}</p>}
-          {saveSuccess && <p className="text-xs text-emerald-400 bg-black/60 rounded px-2 py-0.5">✓ נשמר!</p>}
+        </div>
+      )}
+
+      {/* Toast notification */}
+      {saveSuccess && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] animate-bounce-in">
+          <div className="flex items-center gap-2 bg-emerald-600 text-white text-base font-bold px-6 py-3 rounded-2xl shadow-2xl">
+            <span className="text-xl">✓</span>
+            <span>הניחושים נשמרו!</span>
+          </div>
+        </div>
+      )}
+      {saveError && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60]">
+          <div className="flex items-center gap-2 bg-red-600 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl max-w-[280px] text-center">
+            <span>❌ {saveError}</span>
+          </div>
         </div>
       )}
     </div>
