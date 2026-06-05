@@ -164,14 +164,21 @@ export async function POST(request: NextRequest) {
     }
 
     // 6.3 Advancement scoring
-    // Each tier only fires when the admin has EXPLICITLY saved that stage's qualifiers
-    // in knockout_stage_qualifiers. Never auto-derived from match results or group standings.
     //
-    // User "predicted" sets come from their knockout bracket picks (KnockoutPredictions).
-    // Real sets come only from admin's manual knockout_stage_qualifiers entries.
-    //
-    // ADV_R32 (+4): user predicted a team to WIN their R32 match (advance to R16)
-    //   → fires when admin saves R16 teams in knockout_stage_qualifiers
+    // ADV_R32 (+4): team correctly predicted to REACH R32 (top-2 from group or 3rd-place).
+    //   Fires when the full R32 pool is confirmed (realR32Teams.size === 32).
+    //   User's predicted R32 = their predicted top-2 per group + their 3rd-place selections.
+    const predR32Teams = new Set<number>()
+    for (const g of [...new Set(userGP.map((r: any) => r.group_letter as string))]) {
+      const ordered = userGP.filter((r: any) => r.group_letter === g)
+        .sort((a: any, b: any) => a.predicted_position - b.predicted_position)
+      if (ordered[0]) predR32Teams.add(ordered[0].team_id)
+      if (ordered[1]) predR32Teams.add(ordered[1].team_id)
+    }
+    for (const t of userThird) predR32Teams.add(t.team_id)
+
+    // ADV_R16 (+5): user predicted a team to WIN their R32 match (advance to R16)
+    //   → fires when admin explicitly saves R16 teams in knockout_stage_qualifiers
     const predToR16 = new Set(
       userKO.filter((r: any) => R32_IDS.has(r.match_num))
             .map((r: any) => r.predicted_winner_id as number).filter(Boolean)
@@ -198,10 +205,13 @@ export async function POST(request: NextRequest) {
     )
 
     let advancementPts = 0
-    if (stageQual.r16.size    > 0) advancementPts += scoreAdvancement(predToR16,    stageQual.r16,    'ADV_R32')
-    if (stageQual.qf.size     > 0) advancementPts += scoreAdvancement(predToQF,     stageQual.qf,     'ADV_R16')
-    if (stageQual.sf.size     > 0) advancementPts += scoreAdvancement(predToSF,     stageQual.sf,     'ADV_QF')
-    if (stageQual.final.size  > 0) advancementPts += scoreAdvancement(predToFinal,  stageQual.final,  'ADV_SF')
+    // ADV_R32 (+4): fires when full R32 pool (32 teams) is confirmed
+    if (realR32Teams.size === 32) advancementPts += scoreAdvancement(predR32Teams,  realR32Teams,    'ADV_R32')
+    // ADV_R16+ (+5/6/7/8): fire only when admin explicitly saves each stage in knockout_stage_qualifiers
+    if (stageQual.r16.size   > 0) advancementPts += scoreAdvancement(predToR16,    stageQual.r16,   'ADV_R16')
+    if (stageQual.qf.size    > 0) advancementPts += scoreAdvancement(predToQF,     stageQual.qf,    'ADV_QF')
+    if (stageQual.sf.size    > 0) advancementPts += scoreAdvancement(predToSF,     stageQual.sf,    'ADV_SF')
+    if (stageQual.final.size > 0) advancementPts += scoreAdvancement(predToFinal,  stageQual.final, 'ADV_FINAL')
     if (stageQual.champion?.size > 0) advancementPts += scoreAdvancement(predChampion, stageQual.champion, 'ADV_FINAL')
 
     // 6.4 Knockout scorelines
