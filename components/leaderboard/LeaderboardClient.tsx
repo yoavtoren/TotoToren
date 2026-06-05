@@ -116,6 +116,7 @@ function UserPredictionsModal({
   realSFTeamIds = new Set(),
   realFinalTeamIds = new Set(),
   realGroupStandings = {},
+  koMatchResults = {},
 }: {
   profile: Profile | null
   entry: ScoreEntry | null
@@ -128,6 +129,7 @@ function UserPredictionsModal({
   realQFTeamIds?: Set<number>
   realSFTeamIds?: Set<number>
   realFinalTeamIds?: Set<number>
+  koMatchResults?: Record<number, { home: number; away: number }>
   realGroupStandings?: Record<string, number[]>
 }) {
   const [modalTab, setModalTab] = useState<'predictions' | 'scoring'>('predictions')
@@ -679,7 +681,7 @@ function UserPredictionsModal({
                       .sort((a, b) => b.match_num - a.match_num)  // M104 first, M73 last
                       .map(k => {
                         const winner = getTeamById(k.predicted_winner_id)
-                        // Determine if predicted winner advanced to next round
+                        // Advancement points: did predicted winner reach next round?
                         const advPts =
                           KO_R32.has(k.match_num) && realR16TeamIds.has(k.predicted_winner_id) ? 5 :
                           KO_R16.has(k.match_num) && realQFTeamIds.has(k.predicted_winner_id) ? 6 :
@@ -691,6 +693,15 @@ function UserPredictionsModal({
                           (KO_R16.has(k.match_num) && realQFTeamIds.size > 0  && !realQFTeamIds.has(k.predicted_winner_id)) ||
                           (KO_QF.has(k.match_num)  && realSFTeamIds.size > 0  && !realSFTeamIds.has(k.predicted_winner_id)) ||
                           (KO_SF.has(k.match_num)  && realFinalTeamIds.size > 0 && !realFinalTeamIds.has(k.predicted_winner_id))
+
+                        // Scoreline points: total goals (+2) and exact score (+3)
+                        const real = koMatchResults[k.match_num]
+                        let scorePts = 0
+                        if (real && k.predicted_home_score != null && k.predicted_away_score != null) {
+                          if (k.predicted_home_score + k.predicted_away_score === real.home + real.away) scorePts += 2
+                          if (k.predicted_home_score === real.home && k.predicted_away_score === real.away) scorePts += 3
+                        }
+                        const totalPts = (advPts ?? 0) + scorePts
 
                       const rowBg = advPts != null ? 'bg-emerald-500/10 border-emerald-500/20' :
                                     isWrong ? 'bg-rose-500/8 border-rose-500/15' : 'bg-white/5 border-white/8'
@@ -706,12 +717,23 @@ function UserPredictionsModal({
                               {k.predicted_home_score}:{k.predicted_away_score}
                             </span>
                           )}
-                          {advPts != null
-                            ? <span className="text-emerald-400 font-bold text-[11px] shrink-0">+{advPts}</span>
-                            : isWrong
-                              ? <span className="text-rose-400/60 text-[10px] shrink-0">✗</span>
-                              : <span className="text-white/20 text-[10px] shrink-0">—</span>
-                          }
+                          <div className="flex items-center gap-1 shrink-0">
+                            {advPts != null && (
+                              <span className="text-indigo-300 font-bold text-[11px]" title="קידום">+{advPts}</span>
+                            )}
+                            {scorePts > 0 && (
+                              <span className="text-emerald-300 font-bold text-[11px]" title="תוצאה">+{scorePts}</span>
+                            )}
+                            {totalPts > 0 && (
+                              <span className="text-white/50 text-[10px]">={totalPts}</span>
+                            )}
+                            {totalPts === 0 && isWrong && (
+                              <span className="text-rose-400/60 text-[10px]">✗</span>
+                            )}
+                            {totalPts === 0 && !isWrong && (
+                              <span className="text-white/20 text-[10px]">—</span>
+                            )}
+                          </div>
                         </div>
                         )
                       })
@@ -1370,6 +1392,7 @@ export default function LeaderboardClient({
   realSFTeamIds = new Set(),
   realFinalTeamIds = new Set(),
   realChampionId = null,
+  koMatchResults = {},
 }: {
   initialScores: ScoreEntry[]
   allProfiles: Profile[]
@@ -1382,6 +1405,7 @@ export default function LeaderboardClient({
   realSFTeamIds?: Set<number>
   realFinalTeamIds?: Set<number>
   realChampionId?: number | null
+  koMatchResults?: Record<number, { home: number; away: number }>
 }) {
   const [scores, setScores] = useState(initialScores)
   const [profiles, setProfiles] = useState(allProfiles)
@@ -1625,6 +1649,7 @@ export default function LeaderboardClient({
         realSFTeamIds={realSFTeamIds}
         realFinalTeamIds={realFinalTeamIds}
         realGroupStandings={realGroupStandings}
+        koMatchResults={koMatchResults}
       />
     )}
   </>
