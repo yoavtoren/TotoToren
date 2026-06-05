@@ -957,20 +957,16 @@ function StatsSection({
 
   useEffect(() => {
     const liveIds = liveMatches.map(m => m.match)
-    // When STATS_ALWAYS_VISIBLE also pre-fetch the next upcoming match
     const nextId = STATS_ALWAYS_VISIBLE && nextMatch && !liveIds.includes(nextMatch.match)
       ? [nextMatch.match] : []
     const ids = [...liveIds, ...nextId]
     if (ids.length === 0) return
-    const supabase = createClient()
-    supabase
-      .from('group_match_predictions')
-      .select('user_id, match_id, predicted_home, predicted_away, profiles(display_name)')
-      .in('match_id', ids)
-      .then(({ data }) => {
-        if (!data) return
+    // Use admin API route to bypass RLS (anon client only returns own row for future matches)
+    fetch(`/api/match-predictions?ids=${ids.join(',')}`)
+      .then(r => r.json())
+      .then((data: any[]) => {
         const grouped: typeof matchPreds = {}
-        for (const r of data as any[]) {
+        for (const r of data) {
           if (!grouped[r.match_id]) grouped[r.match_id] = []
           grouped[r.match_id].push({
             user_id: r.user_id,
@@ -1016,31 +1012,36 @@ function StatsSection({
           <p className="text-sm font-semibold text-white">{m.home} נגד {m.away}</p>
         </div>
 
-        {/* Outcome distribution */}
+        {/* Outcome distribution — single stacked bar */}
         <div className="space-y-2">
           <p className="text-[10px] text-white/40 uppercase tracking-wider">
             התפלגות ניחושים{total > 0 ? ` · ${total} משתתפים` : ''}
           </p>
-          {[
-            { label: `${m.home} מנצחת (1)`, count: homeWins, color: 'bg-blue-500/60' },
-            { label: 'תיקו (X)',             count: ties,     color: 'bg-amber-500/60' },
-            { label: `${m.away} מנצחת (2)`, count: awayWins, color: 'bg-rose-500/60' },
-          ].map(({ label, count, color }) => (
-            <div key={label} className="space-y-0.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-white/70">{label}</span>
-                <span className="text-white/50 font-mono tabular-nums">
+          {total === 0 ? (
+            <div className="h-3 bg-white/10 rounded-full" />
+          ) : (
+            <div className="h-3 rounded-full overflow-hidden flex">
+              {homeWins > 0 && <div className="h-full bg-blue-500/70"  style={{ width: `${homeWins / total * 100}%` }} />}
+              {ties     > 0 && <div className="h-full bg-amber-500/70" style={{ width: `${ties     / total * 100}%` }} />}
+              {awayWins > 0 && <div className="h-full bg-rose-500/70"  style={{ width: `${awayWins / total * 100}%` }} />}
+            </div>
+          )}
+          {/* Legend */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {[
+              { label: `${m.home} (1)`, count: homeWins, dot: 'bg-blue-500/70',  text: 'text-blue-300' },
+              { label: 'תיקו (X)',      count: ties,     dot: 'bg-amber-500/70', text: 'text-amber-300' },
+              { label: `${m.away} (2)`, count: awayWins, dot: 'bg-rose-500/70',  text: 'text-rose-300' },
+            ].map(({ label, count, dot, text }) => (
+              <div key={label} className="flex items-center gap-1.5 text-xs">
+                <div className={cn('w-2.5 h-2.5 rounded-sm shrink-0', dot)} />
+                <span className={cn('truncate', text)}>{label}</span>
+                <span className="text-white/40 font-mono tabular-nums">
                   {count}{total > 0 ? ` · ${Math.round(count / total * 100)}%` : ''}
                 </span>
               </div>
-              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={cn('h-full rounded-full transition-all', color)}
-                  style={{ width: `${total > 0 ? (count / total * 100) : 0}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Leader highlight — "היילייט פתיחת עין" */}
