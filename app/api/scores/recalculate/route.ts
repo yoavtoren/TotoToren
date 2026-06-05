@@ -52,17 +52,19 @@ export async function POST(request: NextRequest) {
   // ── 3. R32 / stage qualifiers ─────────────────────────────────
   const { data: thirdRows } = await admin.from('r32_third_place_qualifiers').select('team_id')
   const { data: stageRows }  = await admin.from('knockout_stage_qualifiers').select('stage,team_id')
+  // (r32Teams is built below, using only admin-confirmed actualStandingsMap)
+
+  // realR32Teams: ONLY teams from groups the admin explicitly confirmed in group_actual_standings.
+  // Do NOT fall back to derivedStandings — partial match results would inflate this set.
   const r32Teams = new Set<number>()
-  for (const order of Object.values(realGroupStandings)) {
-    if (order[0]) r32Teams.add(order[0])
-    if (order[1]) r32Teams.add(order[1])
+  for (const order of Object.values(actualStandingsMap)) {
+    if (order.filter(Boolean).length >= 2) {
+      if (order[0]) r32Teams.add(order[0])
+      if (order[1]) r32Teams.add(order[1])
+    }
   }
   for (const r of (thirdRows ?? []) as any[]) r32Teams.add(r.team_id)
-
-  // r32Teams is auto-derived: 1st + 2nd from every group whose standings the admin entered,
-  // plus any manually confirmed third-place qualifiers.
-  // No need to wait for all 12 groups — score as groups are entered.
-  const realR32Teams = r32Teams  // grows incrementally as admin enters each group
+  const realR32Teams = r32Teams  // grows as admin confirms each group (max 24 + 8 = 32)
 
   // groupStageComplete = all 12 groups + 8 third-place entered (used only for ADV_R16+ scoring)
   const all12GroupsEntered = Object.keys(actualStandingsMap).length === 12 &&
