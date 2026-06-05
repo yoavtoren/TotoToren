@@ -59,10 +59,13 @@ export async function POST(request: NextRequest) {
   }
   for (const r of (thirdRows ?? []) as any[]) r32Teams.add(r.team_id)
 
-  // Group stage is complete only when all 72 group matches have actual results.
-  // This prevents test/partial standings data from awarding advancement/standing pts early.
-  const groupMatchCount = Object.keys(groupMatchResults).length
-  const groupStageComplete = groupMatchCount === 72
+  // Group stage is officially complete only when the admin has explicitly:
+  //   1. Saved final standings for all 12 groups (48 rows in group_actual_standings)
+  //   2. Saved all 8 third-place qualifiers for R32
+  // Auto-derived standings from match results are NOT enough — the admin must confirm.
+  const all12GroupsEntered = Object.keys(actualStandingsMap).length === 12 &&
+    Object.values(actualStandingsMap).every(arr => arr.filter(Boolean).length === 4)
+  const groupStageComplete = all12GroupsEntered && (thirdRows ?? []).length === 8
   const realR32Teams = groupStageComplete ? r32Teams : new Set<number>()
   const stageQual: Record<string, Set<number>> = { r16: new Set(), qf: new Set(), sf: new Set(), final: new Set() }
   for (const r of (stageRows ?? []) as any[]) { if (stageQual[r.stage]) stageQual[r.stage].add(r.team_id) }
