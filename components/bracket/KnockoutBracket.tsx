@@ -283,7 +283,7 @@ export default function KnockoutBracket({
   }
 
   const champion    = bracketWinners[104] != null ? getTeamById(bracketWinners[104]!) : null
-  const prevChampionId = useRef<number | null>(null)
+  const prevChampionId = useRef<number | null>(bracketWinners[104] ?? null)
 
   useEffect(() => {
     const newId = bracketWinners[104] ?? null
