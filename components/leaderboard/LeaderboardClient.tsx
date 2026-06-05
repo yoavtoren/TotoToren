@@ -112,6 +112,9 @@ function UserPredictionsModal({
   completedMatchIds = new Set(),
   realR32TeamIds = new Set(),
   realR16TeamIds = new Set(),
+  realQFTeamIds = new Set(),
+  realSFTeamIds = new Set(),
+  realFinalTeamIds = new Set(),
   realGroupStandings = {},
 }: {
   profile: Profile | null
@@ -122,11 +125,17 @@ function UserPredictionsModal({
   completedMatchIds?: Set<number>
   realR32TeamIds?: Set<number>
   realR16TeamIds?: Set<number>
+  realQFTeamIds?: Set<number>
+  realSFTeamIds?: Set<number>
+  realFinalTeamIds?: Set<number>
   realGroupStandings?: Record<string, number[]>
 }) {
   const [modalTab, setModalTab] = useState<'predictions' | 'scoring'>('predictions')
   const [r32Open, setR32Open] = useState(false)
   const [r16Open, setR16Open] = useState(false)
+  const [qfOpen,  setQfOpen]  = useState(false)
+  const [sfOpen,  setSfOpen]  = useState(false)
+  const [finOpen, setFinOpen] = useState(false)
   const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
 
   const nextMatchId = useMemo(() => {
@@ -524,6 +533,108 @@ function UserPredictionsModal({
                           {predToR16.length === 0 && (
                             <p className="text-[11px] text-white/30 italic">לא הוגשו ניחושים לסבב הנוקאאוט</p>
                           )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* ── QF advancement breakdown ─────────────── */}
+              {realQFTeamIds.size > 0 && preds && (() => {
+                const R16_IDS = new Set([89,90,91,92,93,94,95,96])
+                const predToQF = preds.knockout
+                  .filter(k => R16_IDS.has(k.match_num) && k.predicted_winner_id)
+                  .map(k => k.predicted_winner_id)
+                const correct = predToQF.filter(id => realQFTeamIds.has(id))
+                const wrong   = predToQF.filter(id => !realQFTeamIds.has(id))
+                const pts = correct.length * 6
+                return (
+                  <div className="glass rounded-xl overflow-hidden">
+                    <button onClick={() => setQfOpen(o => !o)} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-white/70">פירוט התקדמות לרבע גמר</span>
+                        <span className="text-[10px] bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full font-mono">
+                          {correct.length}/{predToQF.length} נכון · +{pts} נק׳
+                        </span>
+                      </div>
+                      <span className="text-white/30 text-xs">{qfOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {qfOpen && (
+                      <div className="px-3 pb-3 border-t border-white/10 pt-2">
+                        <p className="text-[10px] text-white/30 mb-1.5">ניחושי מנצחי שמינית גמר (מי עלה לרבע):</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {correct.map(id => { const t = getTeamById(id); return t ? <div key={id} className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-1 text-[11px]"><span>{getFlagEmoji(t.flag_code)}</span><span className="text-emerald-200 font-medium">{t.name}</span><span className="text-emerald-400 font-bold">✓ +6</span></div> : null })}
+                          {wrong.map(id => { const t = getTeamById(id); return t ? <div key={id} className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2 py-1 text-[11px]"><span>{getFlagEmoji(t.flag_code)}</span><span className="text-rose-300/70">{t.name}</span><span className="text-rose-400/70">✗</span></div> : null })}
+                          {predToQF.length === 0 && <p className="text-[11px] text-white/30 italic">לא הוגשו ניחושים</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* ── SF advancement breakdown ──────────────── */}
+              {realSFTeamIds.size > 0 && preds && (() => {
+                const QF_IDS = new Set([97,98,99,100])
+                const predToSF = preds.knockout
+                  .filter(k => QF_IDS.has(k.match_num) && k.predicted_winner_id)
+                  .map(k => k.predicted_winner_id)
+                const correct = predToSF.filter(id => realSFTeamIds.has(id))
+                const wrong   = predToSF.filter(id => !realSFTeamIds.has(id))
+                const pts = correct.length * 7
+                return (
+                  <div className="glass rounded-xl overflow-hidden">
+                    <button onClick={() => setSfOpen(o => !o)} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-white/70">פירוט התקדמות לחצי גמר</span>
+                        <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-mono">
+                          {correct.length}/{predToSF.length} נכון · +{pts} נק׳
+                        </span>
+                      </div>
+                      <span className="text-white/30 text-xs">{sfOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {sfOpen && (
+                      <div className="px-3 pb-3 border-t border-white/10 pt-2">
+                        <p className="text-[10px] text-white/30 mb-1.5">ניחושי מנצחי רבע גמר (מי עלה לחצי):</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {correct.map(id => { const t = getTeamById(id); return t ? <div key={id} className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-1 text-[11px]"><span>{getFlagEmoji(t.flag_code)}</span><span className="text-emerald-200 font-medium">{t.name}</span><span className="text-emerald-400 font-bold">✓ +7</span></div> : null })}
+                          {wrong.map(id => { const t = getTeamById(id); return t ? <div key={id} className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2 py-1 text-[11px]"><span>{getFlagEmoji(t.flag_code)}</span><span className="text-rose-300/70">{t.name}</span><span className="text-rose-400/70">✗</span></div> : null })}
+                          {predToSF.length === 0 && <p className="text-[11px] text-white/30 italic">לא הוגשו ניחושים</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* ── Final advancement breakdown ───────────── */}
+              {realFinalTeamIds.size > 0 && preds && (() => {
+                const SF_IDS = new Set([101,102])
+                const predToFinal = preds.knockout
+                  .filter(k => SF_IDS.has(k.match_num) && k.predicted_winner_id)
+                  .map(k => k.predicted_winner_id)
+                const correct = predToFinal.filter(id => realFinalTeamIds.has(id))
+                const wrong   = predToFinal.filter(id => !realFinalTeamIds.has(id))
+                const pts = correct.length * 8
+                return (
+                  <div className="glass rounded-xl overflow-hidden">
+                    <button onClick={() => setFinOpen(o => !o)} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-white/70">פירוט התקדמות לגמר</span>
+                        <span className="text-[10px] bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full font-mono">
+                          {correct.length}/{predToFinal.length} נכון · +{pts} נק׳
+                        </span>
+                      </div>
+                      <span className="text-white/30 text-xs">{finOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {finOpen && (
+                      <div className="px-3 pb-3 border-t border-white/10 pt-2">
+                        <p className="text-[10px] text-white/30 mb-1.5">ניחושי מנצחי חצי גמר (מי הגיע לגמר):</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {correct.map(id => { const t = getTeamById(id); return t ? <div key={id} className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-1 text-[11px]"><span>{getFlagEmoji(t.flag_code)}</span><span className="text-emerald-200 font-medium">{t.name}</span><span className="text-emerald-400 font-bold">✓ +8</span></div> : null })}
+                          {wrong.map(id => { const t = getTeamById(id); return t ? <div key={id} className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2 py-1 text-[11px]"><span>{getFlagEmoji(t.flag_code)}</span><span className="text-rose-300/70">{t.name}</span><span className="text-rose-400/70">✗</span></div> : null })}
+                          {predToFinal.length === 0 && <p className="text-[11px] text-white/30 italic">לא הוגשו ניחושים</p>}
                         </div>
                       </div>
                     )}
@@ -1441,6 +1552,9 @@ export default function LeaderboardClient({
         completedMatchIds={completedMatchIds}
         realR32TeamIds={realR32TeamIds}
         realR16TeamIds={realR16TeamIds}
+        realQFTeamIds={realQFTeamIds}
+        realSFTeamIds={realSFTeamIds}
+        realFinalTeamIds={realFinalTeamIds}
         realGroupStandings={realGroupStandings}
       />
     )}
