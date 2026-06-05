@@ -1526,7 +1526,45 @@ export default function LeaderboardClient({
       </div>
 
       {/* Tab content */}
-      {tab === 'standings' && <StandingsSection entries={mergedEntries} futureMap={futureMap} myUserId={myUserId} onClickUser={openUserModal} />}
+      {tab === 'standings' && (
+        <div className="space-y-6">
+          <StandingsSection entries={mergedEntries} futureMap={futureMap} myUserId={myUserId} onClickUser={openUserModal} />
+
+          {/* Scoring system table */}
+          <GlassCard className="space-y-3">
+            <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest">שיטת הניקוד</h2>
+            <p className="text-xs text-white/40">כל הקטגוריות עצמאיות ומצטברות.</p>
+            <div className="space-y-0 divide-y divide-white/5">
+              {[
+                { cat: '1X2 נכון (מי ניצח)',                    pts: '+1 נק׳' },
+                { cat: 'מספר שערים נכון',                       pts: '+2 נק׳' },
+                { cat: 'תוצאה מדויקת',                          pts: '+3 נק׳' },
+                { cat: 'דירוג בית — מיקום נכון (×4 לבית)',     pts: '+3 נק׳' },
+                { cat: 'נבחרת מגיעה לשלב 32',                  pts: '+4 נק׳' },
+                { cat: 'נבחרת מגיעה לשלב 16',                  pts: '+5 נק׳' },
+                { cat: 'נבחרת מגיעה לרבע גמר',                 pts: '+6 נק׳' },
+                { cat: 'נבחרת מגיעה לחצי גמר',                 pts: '+7 נק׳' },
+                { cat: 'נבחרת מגיעה לגמר',                     pts: '+8 נק׳' },
+                { cat: 'משחק נוקאאוט — מספר שערים נכון',       pts: '+2 נק׳' },
+                { cat: 'משחק נוקאאוט — תוצאה מדויקת',          pts: '+3 נק׳' },
+                { cat: 'אלוף גביע העולם',                       pts: '+15 נק׳' },
+                { cat: 'הנבחרת הכי שערנית',                    pts: '+8 נק׳' },
+                { cat: 'קבוצת מלך השערים (עקב זהב)',           pts: '+8 נק׳' },
+                { cat: 'הנבחרת שספגה הכי הרבה שערים',          pts: '+10 נק׳' },
+                { cat: 'סך שערים בטורניר (מדויק)',             pts: '+12 נק׳' },
+              ].map(({ cat, pts }) => (
+                <div key={cat} className="flex items-center justify-between py-2 gap-4">
+                  <span className="text-sm text-white/70">{cat}</span>
+                  <span className="text-sm font-bold text-indigo-300 tabular-nums shrink-0">{pts}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-white/30 leading-relaxed border-t border-white/8 pt-2">
+              במשחקי בית הניקוד מצטבר: תוצאה מדויקת = 1+2+3 = 6 נקודות. 1X2 נכון + שערים נכון (אבל לא מדויק) = 3 נקודות. דירוגי ההתקדמות עצמאיים — נבחרת שנחשה נכון בכל שלב מנקדת בכל שלב שהיא מגיעה אליו.
+            </p>
+          </GlassCard>
+        </div>
+      )}
       {tab === 'live'      && <LiveSection />}
       {tab === 'bracket'   && (
         <BracketProgressSection
