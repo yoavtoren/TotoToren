@@ -283,7 +283,7 @@ export default function PredictClient({
 
       {/* Fixed save button — desktop only, stays in place while scrolling */}
       {!isLocked && (
-        <div className="hidden sm:block fixed top-[5.5rem] left-8 z-40">
+        <div className="hidden sm:block fixed top-[4.75rem] left-[max(1rem,calc(50vw-40rem+2rem))] z-40">
           <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}>
             {saving ? 'שומר…' : '💾 שמור ניחושים'}
           </GlassButton>
