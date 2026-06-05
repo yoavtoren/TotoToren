@@ -266,29 +266,29 @@ export default function PredictClient({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 pb-28 sm:pb-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-shadow">הניחושים שלי</h1>
           <p className="text-sm text-white/50 mt-1">
             מלאו את כל חמשת החלקים ושמרו לפני תחילת הטורניר.
           </p>
         </div>
-
-        {isLocked ? (
+        {isLocked && (
           <GlassCard className="flex items-center gap-2 px-4 py-2 shrink-0">
             <span className="text-lg">🔒</span>
             <span className="text-sm font-semibold text-white/70">הניחושים נעולים</span>
           </GlassCard>
-        ) : (
-          <div className="hidden sm:flex items-center gap-3 shrink-0">
-            {saveError && <p className="text-sm text-red-400 max-w-[200px]">{saveError}</p>}
-            {saveSuccess && <p className="text-sm text-emerald-400">✓ נשמר!</p>}
-            <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}>
-              {saving ? 'שומר…' : '💾 שמור ניחושים'}
-            </GlassButton>
-          </div>
         )}
       </div>
+
+      {/* Fixed save button — desktop only, stays in place while scrolling */}
+      {!isLocked && (
+        <div className="hidden sm:block fixed top-[5.5rem] left-8 z-40">
+          <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}>
+            {saving ? 'שומר…' : '💾 שמור ניחושים'}
+          </GlassButton>
+        </div>
+      )}
 
       {/* Progress */}
       <BetProgress stats={completionStats} />
