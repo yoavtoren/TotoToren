@@ -111,6 +111,7 @@ function UserPredictionsModal({
   onClose,
   completedMatchIds = new Set(),
   realR32TeamIds = new Set(),
+  realR16TeamIds = new Set(),
 }: {
   profile: Profile | null
   entry: ScoreEntry | null
@@ -119,9 +120,11 @@ function UserPredictionsModal({
   onClose: () => void
   completedMatchIds?: Set<number>
   realR32TeamIds?: Set<number>
+  realR16TeamIds?: Set<number>
 }) {
   const [modalTab, setModalTab] = useState<'predictions' | 'scoring'>('predictions')
   const [r32Open, setR32Open] = useState(false)
+  const [r16Open, setR16Open] = useState(false)
   const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
 
   const nextMatchId = useMemo(() => {
@@ -391,6 +394,64 @@ function UserPredictionsModal({
                               </div>
                             ) : null
                           })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* ── R16 advancement breakdown ─────────────── */}
+              {realR16TeamIds.size > 0 && preds && (() => {
+                // R32 match IDs: 73-88
+                const R32_IDS = new Set([73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88])
+                const predToR16 = preds.knockout
+                  .filter(k => R32_IDS.has(k.match_num) && k.predicted_winner_id)
+                  .map(k => k.predicted_winner_id)
+                const correct = predToR16.filter(id => realR16TeamIds.has(id))
+                const wrong   = predToR16.filter(id => !realR16TeamIds.has(id))
+                const pts = correct.length * 5
+                return (
+                  <div className="glass rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setR16Open(o => !o)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-white/70">פירוט התקדמות לסבב 16</span>
+                        <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full font-mono">
+                          {correct.length}/{predToR16.length} נכון · +{pts} נק׳
+                        </span>
+                      </div>
+                      <span className="text-white/30 text-xs">{r16Open ? '▲' : '▼'}</span>
+                    </button>
+                    {r16Open && (
+                      <div className="px-3 pb-3 space-y-1 border-t border-white/10 pt-2">
+                        <p className="text-[10px] text-white/30 mb-1.5">ניחושי מנצחי שלב 32 (מי עלה לסבב 16):</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {correct.map(id => {
+                            const t = getTeamById(id)
+                            return t ? (
+                              <div key={id} className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-1 text-[11px]">
+                                <span>{getFlagEmoji(t.flag_code)}</span>
+                                <span className="text-emerald-200 font-medium">{t.name}</span>
+                                <span className="text-emerald-400 font-bold">✓ +5</span>
+                              </div>
+                            ) : null
+                          })}
+                          {wrong.map(id => {
+                            const t = getTeamById(id)
+                            return t ? (
+                              <div key={id} className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2 py-1 text-[11px]">
+                                <span>{getFlagEmoji(t.flag_code)}</span>
+                                <span className="text-rose-300/70">{t.name}</span>
+                                <span className="text-rose-400/70">✗</span>
+                              </div>
+                            ) : null
+                          })}
+                          {predToR16.length === 0 && (
+                            <p className="text-[11px] text-white/30 italic">לא הוגשו ניחושים לסבב הנוקאאוט</p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -996,12 +1057,14 @@ export default function LeaderboardClient({
   initialFutures,
   completedMatchIds = new Set(),
   realR32TeamIds = new Set(),
+  realR16TeamIds = new Set(),
 }: {
   initialScores: ScoreEntry[]
   allProfiles: Profile[]
   initialFutures: FuturePred[]
   completedMatchIds?: Set<number>
   realR32TeamIds?: Set<number>
+  realR16TeamIds?: Set<number>
 }) {
   const [scores, setScores] = useState(initialScores)
   const [profiles, setProfiles] = useState(allProfiles)
@@ -1192,6 +1255,7 @@ export default function LeaderboardClient({
         onClose={() => { setModalUserId(null); setModalPreds(null) }}
         completedMatchIds={completedMatchIds}
         realR32TeamIds={realR32TeamIds}
+        realR16TeamIds={realR16TeamIds}
       />
     )}
   </>
