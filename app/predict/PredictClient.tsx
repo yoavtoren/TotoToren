@@ -200,10 +200,10 @@ export default function PredictClient({
           }
         })
 
-      // Part 5 — futures
+      // Part 5 — futures (champion derived from bracket final winner)
       const futuresRow = {
         user_id: userId,
-        champion_team_id:       futures.champion_team_id,
+        champion_team_id:       bracketWinners[104] ?? futures.champion_team_id,
         top_scorer_team_id:     futures.top_scorer_team_id,
         golden_boot_team_id:    futures.golden_boot_team_id,
         most_conceded_team_id:  futures.most_conceded_team_id,
@@ -323,7 +323,12 @@ export default function PredictClient({
 
       {/* Part 5 */}
       <SectionWrapper filled={completionStats.futures.filled} total={completionStats.futures.total}>
-        <FuturesBetsSection futures={futures} onSet={setFuture} disabled={isLocked} />
+        <FuturesBetsSection
+          futures={futures}
+          onSet={setFuture}
+          disabled={isLocked}
+          bracketChampionId={bracketWinners[104] ?? null}
+        />
       </SectionWrapper>
 
       {/* Sticky mobile save */}

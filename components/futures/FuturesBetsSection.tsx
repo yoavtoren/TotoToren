@@ -1,16 +1,21 @@
 'use client'
 
+import { useState } from 'react'
 import { TEAMS, getFlagEmoji, getTeamById } from '@/data/teams'
 import GlassCard from '@/components/ui/GlassCard'
 import type { FuturesState } from '@/types'
 import { cn } from '@/lib/utils'
 
+const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'] as const
+
 interface FuturesBetsSectionProps {
   futures: FuturesState
   onSet: <K extends keyof FuturesState>(field: K, value: FuturesState[K]) => void
   disabled?: boolean
+  bracketChampionId?: number | null
 }
 
+// ── Centered modal team picker ─────────────────────────────────────────────────
 interface TeamPickerProps {
   label: string
   hint: string
@@ -21,7 +26,19 @@ interface TeamPickerProps {
 }
 
 function TeamPicker({ label, hint, points, value, onChange, disabled }: TeamPickerProps) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const selected = value ? getTeamById(value) : null
+
+  const filtered = TEAMS.filter(t =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  function pick(id: number) {
+    onChange(id)
+    setOpen(false)
+    setSearch('')
+  }
 
   return (
     <div className="space-y-1.5">
@@ -33,50 +50,124 @@ function TeamPicker({ label, hint, points, value, onChange, disabled }: TeamPick
         <span className="text-xs text-indigo-300 font-bold">+{points} pts</span>
       </div>
 
-      <div className="relative">
-        <select
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : null)}
-          disabled={disabled}
-          className={cn(
-            'glass-input appearance-none pr-8 cursor-pointer',
-            value ? 'text-white' : 'text-white/60'
-          )}
-        >
-          <option value="">— בחרו נבחרת —</option>
-          {['A','B','C','D','E','F','G','H','I','J','K','L'].map((g) => (
-            <optgroup key={g} label={`Group ${g}`}>
-              {TEAMS.filter((t) => t.group_letter === g).map((t) => (
-                <option key={t.id} value={t.id}>
-                  {getFlagEmoji(t.flag_code)} {t.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-        {/* custom dropdown arrow */}
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">▼</span>
-      </div>
+      {/* Trigger button */}
+      <button
+        onClick={() => !disabled && setOpen(true)}
+        disabled={disabled}
+        className={cn(
+          'glass-input w-full text-right flex items-center gap-2 cursor-pointer hover:bg-white/5 transition-colors',
+          disabled && 'opacity-60 cursor-not-allowed',
+        )}
+      >
+        {selected ? (
+          <>
+            <span className="text-base shrink-0">{getFlagEmoji(selected.flag_code)}</span>
+            <span className="flex-1 text-white font-medium">{selected.name}</span>
+            <span className="text-[10px] text-white/30">Group {selected.group_letter}</span>
+            {!disabled && (
+              <span
+                role="button"
+                onClick={e => { e.stopPropagation(); onChange(null) }}
+                className="text-white/25 hover:text-red-400 text-xs transition-colors ml-1"
+              >✕</span>
+            )}
+          </>
+        ) : (
+          <span className="text-white/40 flex-1">— בחרו נבחרת —</span>
+        )}
+        {!selected && <span className="text-white/30 text-xs">▼</span>}
+      </button>
 
-      {selected && (
-        <div className="flex items-center gap-2 glass rounded-lg px-3 py-1.5">
-          <span className="text-base">{getFlagEmoji(selected.flag_code)}</span>
-          <span className="text-sm font-medium text-white">{selected.name}</span>
-          <span className="text-[10px] text-white/30 ml-auto">Group {selected.group_letter}</span>
-          {!disabled && (
-            <button
-              onClick={() => onChange(null)}
-              className="text-white/25 hover:text-red-400 text-xs transition-colors ml-1"
-              title="Clear"
-            >✕</button>
-          )}
+      {/* Centered modal */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => { setOpen(false); setSearch('') }}
+        >
+          <div
+            className="glass rounded-2xl w-full max-w-sm max-h-[70vh] flex flex-col overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-4 pt-4 pb-2 border-b border-white/10">
+              <p className="text-sm font-semibold text-white mb-2">{label}</p>
+              <input
+                autoFocus
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="חיפוש נבחרת..."
+                className="glass-input py-2 text-sm w-full"
+              />
+            </div>
+            <div className="overflow-y-auto flex-1 py-1">
+              {GROUPS.map(g => {
+                const groupTeams = filtered.filter(t => t.group_letter === g)
+                if (!groupTeams.length) return null
+                return (
+                  <div key={g}>
+                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider px-4 pt-2 pb-1">
+                      Group {g}
+                    </p>
+                    {groupTeams.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => pick(t.id)}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/8 transition-colors text-left',
+                          value === t.id && 'bg-indigo-500/20',
+                        )}
+                      >
+                        <span className="text-lg shrink-0">{getFlagEmoji(t.flag_code)}</span>
+                        <span className={cn('text-sm flex-1', value === t.id ? 'text-indigo-200 font-semibold' : 'text-white/80')}>
+                          {t.name}
+                        </span>
+                        {value === t.id && <span className="text-indigo-400 text-xs">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-export default function FuturesBetsSection({ futures, onSet, disabled }: FuturesBetsSectionProps) {
+// ── Champion display (derived from bracket) ────────────────────────────────────
+function ChampionFromBracket({ teamId }: { teamId: number | null }) {
+  const team = teamId ? getTeamById(teamId) : null
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-white">הנבחרת הזוכה</p>
+          <p className="text-xs text-white/40">נקבע לפי הנבחרת שבחרת לנצח בגמר בחלק 4</p>
+        </div>
+        <span className="text-xs text-indigo-300 font-bold">+15 pts</span>
+      </div>
+      <div className={cn(
+        'glass-input flex items-center gap-2',
+        team ? 'border-yellow-400/30' : 'border-white/10 opacity-60',
+      )}>
+        {team ? (
+          <>
+            <span className="text-2xl shrink-0">{getFlagEmoji(team.flag_code)}</span>
+            <span className="flex-1 text-white font-semibold">{team.name}</span>
+            <span className="text-yellow-400 text-sm">🏆</span>
+          </>
+        ) : (
+          <span className="text-white/30 text-sm flex-1">בחר אלוף בסבב הנוקאאוט ← חלק 4</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+export default function FuturesBetsSection({ futures, onSet, disabled, bracketChampionId }: FuturesBetsSectionProps) {
   return (
     <section className="space-y-4">
       <div>
@@ -87,14 +178,7 @@ export default function FuturesBetsSection({ futures, onSet, disabled }: Futures
       </div>
 
       <GlassCard className="space-y-6">
-        <TeamPicker
-          label="הנבחרת הזוכה"
-          hint="איזו נבחרת תרים את הגביע ב-19 ביולי?"
-          points={15}
-          value={futures.champion_team_id}
-          onChange={(id) => onSet('champion_team_id', id)}
-          disabled={disabled}
-        />
+        <ChampionFromBracket teamId={bracketChampionId ?? null} />
 
         <div className="h-px bg-white/10" />
 
@@ -131,7 +215,6 @@ export default function FuturesBetsSection({ futures, onSet, disabled }: Futures
 
         <div className="h-px bg-white/10" />
 
-        {/* Total goals — integer input */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <div>
