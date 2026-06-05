@@ -48,19 +48,19 @@ export default function CountdownTimer() {
       <p className="text-sm text-white/50 uppercase tracking-widest mb-4">
         הטורניר מתחיל בעוד
       </p>
-      <div className="flex items-center justify-center gap-3 sm:gap-4">
+      <div className="flex items-center justify-center gap-1.5 sm:gap-4">
         {units.map(({ label, value }, i) => (
-          <div key={label} className="flex items-center gap-3 sm:gap-4">
-            <GlassCard className="min-w-[72px] sm:min-w-[88px] py-4 text-center card-accent">
-              <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-white">
+          <div key={label} className="flex items-center gap-1.5 sm:gap-4">
+            <GlassCard className="w-[62px] sm:w-[88px] py-3 sm:py-4 text-center card-accent">
+              <div className="text-2xl sm:text-4xl font-bold font-mono tabular-nums text-white">
                 {pad(value)}
               </div>
-              <div className="text-[10px] sm:text-xs text-white/50 tracking-widest mt-1">
+              <div className="text-[9px] sm:text-xs text-white/50 tracking-widest mt-1">
                 {label}
               </div>
             </GlassCard>
             {i < units.length - 1 && (
-              <span className="text-2xl font-bold text-white/30 -mt-4">:</span>
+              <span className="text-lg sm:text-2xl font-bold text-white/30 -mt-4">:</span>
             )}
           </div>
         ))}
