@@ -3,7 +3,7 @@
  * Change values here only — logic in scoring.ts reads these.
  *
  * D-1 defaults (advancement tiers):
- *   R32=4, R16=5, QF=6, SF=7, Final=8
+ *   R32=4, R16=5, QF=6, SF=7, Final=10
  * Futures set by owner: Champion=15, Top-scoring team=8, Golden Boot=8, Most-conceding=10, Total goals=12
  */
 export const SCORING = {
@@ -20,7 +20,7 @@ export const SCORING = {
   ADV_R16:    5,  // … Round of 16
   ADV_QF:     6,  // … Quarter-final
   ADV_SF:     7,  // … Semi-final
-  ADV_FINAL:  8,  // … Final (champion worth a separate FUTURES_CHAMPION on top)
+  ADV_FINAL:  10, // … Final (champion worth a separate FUTURES_CHAMPION on top)
 
   // ── Knockout scoreline (no 1X2 — §6.4) ──────────────────
   KO_TOTAL_GOALS:  2,  // correct total goals

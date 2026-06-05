@@ -396,19 +396,19 @@ export default function KnockoutBracket({
               <div
                 className="absolute rounded-2xl text-center overflow-hidden"
                 style={{
-                  top: sfTopY - 155,
-                  left: -16, right: -16,
+                  top: sfTopY - 195,
+                  left: -20, right: -20,
                   background: 'linear-gradient(160deg, rgba(234,179,8,0.22), rgba(234,179,8,0.07))',
                   border: '2px solid rgba(234,179,8,0.55)',
                   boxShadow: '0 0 32px rgba(234,179,8,0.25)',
                 }}
               >
-                <div className="px-2 py-2 flex flex-col items-center gap-1">
-                  <Image src="/trophy.png" alt="trophy" width={80} height={80} className="w-20 h-20 object-contain" />
-                  <p className="text-[9px] text-yellow-400/70 font-bold uppercase tracking-widest">🏆 אלוף</p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-2xl">{getFlagEmoji(champion.flag_code)}</span>
-                    <p className="text-base font-extrabold text-yellow-200 leading-tight">{champion.name}</p>
+                <div className="px-2 py-3 flex flex-col items-center gap-1.5">
+                  <Image src="/trophy.png" alt="trophy" width={96} height={96} className="w-24 h-24 object-contain" />
+                  <p className="text-xs text-yellow-400/80 font-bold uppercase tracking-widest">🏆 אלוף</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl">{getFlagEmoji(champion.flag_code)}</span>
+                    <p className="text-xl font-extrabold text-yellow-200 leading-tight">{champion.name}</p>
                   </div>
                 </div>
               </div>
