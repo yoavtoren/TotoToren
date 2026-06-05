@@ -854,6 +854,14 @@ function UserPredictionsModal({
 
 // ── Sub-component: Futures distribution bar card ──────────────
 
+const DIST_COLORS = [
+  { bar: 'bg-blue-400',    text: 'text-blue-300' },
+  { bar: 'bg-emerald-400', text: 'text-emerald-300' },
+  { bar: 'bg-amber-400',   text: 'text-amber-300' },
+  { bar: 'bg-rose-400',    text: 'text-rose-300' },
+  { bar: 'bg-violet-400',  text: 'text-violet-300' },
+]
+
 function FuturesDistCard({
   label,
   emoji,
@@ -870,40 +878,43 @@ function FuturesDistCard({
       <p className="text-xs text-white/25 italic">אין ניחושים</p>
     </GlassCard>
   )
+
+  const segments = [
+    ...top5.map((item, i) => ({ ...item, color: DIST_COLORS[i % DIST_COLORS.length], isOther: false })),
+    ...(otherCount > 0 ? [{ teamId: -1, count: otherCount, color: { bar: 'bg-white/25', text: 'text-white/40' }, isOther: true }] : []),
+  ]
+
   return (
     <GlassCard className="space-y-2.5">
       <p className="text-xs font-bold text-white/70 uppercase tracking-wider">{emoji} {label}</p>
-      <div className="space-y-1.5">
-        {top5.map(({ teamId, count }) => {
-          const team = getTeamById(teamId)
+
+      {/* Single stacked bar — each team gets a colored segment */}
+      <div className="h-3 rounded-full overflow-hidden flex">
+        {segments.map(({ teamId, count, color }) => (
+          <div
+            key={teamId}
+            className={cn('h-full', color.bar)}
+            style={{ width: `${count / total * 100}%`, minWidth: count > 0 ? 2 : 0 }}
+          />
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="space-y-1">
+        {segments.map(({ teamId, count, color, isOther }) => {
+          const team = isOther ? null : getTeamById(teamId)
           const pct = Math.round(count / total * 100)
           return (
-            <div key={teamId} className="space-y-0.5">
-              <div className="flex items-center gap-1.5 text-xs">
-                {team && <span className="text-sm shrink-0">{getFlagEmoji(team.flag_code)}</span>}
-                <span className="flex-1 text-white/80 truncate">{team?.name ?? '?'}</span>
-                <span className="text-white/50 font-mono tabular-nums shrink-0">{count} · {pct}%</span>
-              </div>
-              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-400/50 rounded-full" style={{ width: `${pct}%` }} />
-              </div>
+            <div key={teamId} className="flex items-center gap-1.5 text-xs">
+              <div className={cn('w-2.5 h-2.5 rounded-sm shrink-0', color.bar)} />
+              {!isOther && team && <span className="text-sm shrink-0 leading-none">{getFlagEmoji(team.flag_code)}</span>}
+              <span className={cn('flex-1 truncate', isOther ? 'text-white/40 italic' : 'text-white/80')}>
+                {isOther ? 'אחר' : (team?.name ?? '?')}
+              </span>
+              <span className="text-white/50 font-mono tabular-nums shrink-0">{count} · {pct}%</span>
             </div>
           )
         })}
-        {otherCount > 0 && (
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-sm shrink-0">🌍</span>
-              <span className="flex-1 text-white/40 italic">אחר</span>
-              <span className="text-white/30 font-mono tabular-nums shrink-0">
-                {otherCount} · {Math.round(otherCount / total * 100)}%
-              </span>
-            </div>
-            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-white/20 rounded-full" style={{ width: `${Math.round(otherCount / total * 100)}%` }} />
-            </div>
-          </div>
-        )}
       </div>
     </GlassCard>
   )
@@ -1062,7 +1073,7 @@ function StatsSection({
         <GlassCard className="flex items-center justify-between py-3">
           <div>
             <p className="text-sm font-semibold text-white">ממוצע שערים בטורניר</p>
-            <p className="text-xs text-white/40 mt-0.5">ממוצע ניחושי סך שערים מכלל המשתתפים ({goalsArr.length} ניחושים)</p>
+            <p className="text-xs text-white/40 mt-0.5">ממוצע ניחושי סך שערים מכלל המשתתפים ({goalsArr.length} {goalsArr.length === 1 ? 'ניחוש' : 'ניחושים'})</p>
           </div>
           <span className="text-3xl font-extrabold text-emerald-300 tabular-nums">{avgGoals}</span>
         </GlassCard>
@@ -1715,15 +1726,13 @@ export default function LeaderboardClient({
     const supabase = createClient()
 
     async function fetchAll() {
-      // Don't re-fetch profiles — the server uses admin client (bypasses RLS)
-      // and the anon-key client would only return the current user's own row.
-      const [{ data: s }, { data: f }, { data: { user } }] = await Promise.all([
+      // Don't re-fetch profiles or futures — the server uses admin client (bypasses RLS);
+      // the anon-key client would only return the current user's own row for both.
+      const [{ data: s }, { data: { user } }] = await Promise.all([
         supabase.from('scores').select('*, profiles(display_name, avatar_url)').order('total_score', { ascending: false }),
-        supabase.from('futures_predictions').select('user_id, champion_team_id, top_scorer_team_id, golden_boot_team_id, most_conceded_team_id, total_goals_prediction'),
         supabase.auth.getUser(),
       ])
       if (s) setScores(s as ScoreEntry[])
-      if (f) setFutures(f as FuturePred[])
       if (user) setMyUserId(user.id)
 
       // Add current user to the server-provided list only if missing
