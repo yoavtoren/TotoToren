@@ -77,8 +77,8 @@ function localShortDt(utc: string) {
 
 // ── Stats helpers ─────────────────────────────────────────────
 
-// Change to false to show stats only after the first game kicks off
-const STATS_ALWAYS_VISIBLE = true
+// Set to true only for local dev testing; production shows locked until first kickoff
+const STATS_ALWAYS_VISIBLE = false
 
 function computeTop5Teams(
   futures: FuturePred[],
@@ -957,8 +957,7 @@ function StatsSection({
 
   useEffect(() => {
     const liveIds = liveMatches.map(m => m.match)
-    const nextId = STATS_ALWAYS_VISIBLE && nextMatch && !liveIds.includes(nextMatch.match)
-      ? [nextMatch.match] : []
+    const nextId = nextMatch && !liveIds.includes(nextMatch.match) ? [nextMatch.match] : []
     const ids = [...liveIds, ...nextId]
     if (ids.length === 0) return
     // Use admin API route to bypass RLS (anon client only returns own row for future matches)
@@ -980,7 +979,72 @@ function StatsSection({
   }, [liveMatches, nextMatch])
 
   const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
-  if (!STATS_ALWAYS_VISIBLE && !tournamentStarted) return null
+
+  // ── Locked state: show card shapes + lock icons, no prediction data ──
+  if (!tournamentStarted) {
+    const nextHomeTeam = nextMatch ? getTeamById(getTeamIdByName(nextMatch.home) ?? 0) : null
+    const nextAwayTeam = nextMatch ? getTeamById(getTeamIdByName(nextMatch.away) ?? 0) : null
+    return (
+      <div className="space-y-4" dir="rtl">
+        <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest px-1">סטטיסטיקות ניחושים</h2>
+
+        {/* Next match card — teams visible, distribution locked */}
+        {nextMatch && (
+          <GlassCard className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full font-semibold">
+                הבא ▶ {localShortDt(nextMatch.kickoff_utc)}
+              </span>
+              <p className="text-[10px] text-white/35 font-mono">בית {(nextMatch as any).group} · משחק {nextMatch.match}</p>
+            </div>
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-2 flex-1 justify-end">
+                <span className="text-base font-semibold text-white">{nextMatch.home}</span>
+                {nextHomeTeam && <span className="text-3xl">{getFlagEmoji(nextHomeTeam.flag_code)}</span>}
+              </div>
+              <span className="text-white/30 text-sm font-bold shrink-0">נגד</span>
+              <div className="flex items-center gap-2 flex-1 justify-start">
+                {nextAwayTeam && <span className="text-3xl">{getFlagEmoji(nextAwayTeam.flag_code)}</span>}
+                <span className="text-base font-semibold text-white">{nextMatch.away}</span>
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 py-3 border-t border-white/10">
+              <span className="text-2xl">🔒</span>
+              <p className="text-sm text-white/50 font-semibold">ניחושי המשחק ייחשפו עם הקיקאוף</p>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Futures cards — labels visible, data locked */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { label: 'מי יהיה אלוף?',          emoji: '🏆' },
+            { label: 'הנבחרת הכי שערנית',       emoji: '⚽' },
+            { label: 'קבוצת עקב זהב',           emoji: '👟' },
+            { label: 'תספוג הכי הרבה שערים',    emoji: '🥅' },
+          ].map(({ label, emoji }) => (
+            <GlassCard key={label} className="flex items-center gap-3 py-4">
+              <span className="text-xl">{emoji}</span>
+              <p className="flex-1 text-sm font-semibold text-white/50">{label}</p>
+              <span className="text-lg">🔒</span>
+            </GlassCard>
+          ))}
+        </div>
+
+        {/* Avg goals — locked */}
+        <GlassCard className="flex items-center justify-between py-3">
+          <div>
+            <p className="text-sm font-semibold text-white/50">ממוצע שערים בטורניר</p>
+            <p className="text-xs text-white/30 mt-0.5">ייחשף עם פתיחת הטורניר</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-3xl font-bold text-white/15 tabular-nums">??</span>
+            <span className="text-xl">🔒</span>
+          </div>
+        </GlassCard>
+      </div>
+    )
+  }
 
   const top5Champion     = computeTop5Teams(allFutures, 'champion_team_id')
   const top5TopScorer    = computeTop5Teams(allFutures, 'top_scorer_team_id')
@@ -1114,8 +1178,8 @@ function StatsSection({
       {/* Live matches */}
       {liveMatches.map(m => renderMatchCard(m, true))}
 
-      {/* Next upcoming match (visible when STATS_ALWAYS_VISIBLE) */}
-      {STATS_ALWAYS_VISIBLE && nextMatch && !liveMatches.some(lm => lm.match === nextMatch.match) &&
+      {/* Next upcoming match — always shown once tournament has started */}
+      {nextMatch && !liveMatches.some(lm => lm.match === nextMatch.match) &&
         renderMatchCard(nextMatch, false)
       }
 
