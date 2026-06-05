@@ -1089,7 +1089,7 @@ function StatsSection({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FuturesDistCard label="מי יהיה אלוף?" emoji="🏆" result={top5Champion} />
         <FuturesDistCard label="הנבחרת הכי שערנית" emoji="⚽" result={top5TopScorer} />
-        <FuturesDistCard label="קבוצת עקב זהב" emoji="👟" result={top5GoldenBoot} />
+        <FuturesDistCard label="נעל הזהב" emoji="👟" result={top5GoldenBoot} />
         <FuturesDistCard label="תספוג הכי הרבה שערים" emoji="🥅" result={top5MostConceded} />
       </div>
 
@@ -1302,7 +1302,7 @@ function LiveSection() {
 const FUTURES_LABELS: Record<string, string> = {
   champion_team_id:       'Champion',
   top_scorer_team_id:     'Top-scoring Team',
-  golden_boot_team_id:    'Golden Boot',
+  golden_boot_team_id:    'נעל הזהב',
   most_conceded_team_id:  'Most Conceded',
 }
 
@@ -1906,7 +1906,7 @@ export default function LeaderboardClient({
                 { cat: 'משחק נוקאאוט — תוצאה מדויקת',          pts: '+3 נק׳' },
                 { cat: 'אלוף גביע העולם',                       pts: '+15 נק׳' },
                 { cat: 'הנבחרת הכי שערנית',                    pts: '+8 נק׳' },
-                { cat: 'קבוצת מלך השערים (עקב זהב)',           pts: '+8 נק׳' },
+                { cat: 'נעל הזהב (קבוצת הכובש)',           pts: '+8 נק׳' },
                 { cat: 'הנבחרת שספגה הכי הרבה שערים',          pts: '+10 נק׳' },
                 { cat: 'סך שערים בטורניר (מדויק)',             pts: '+12 נק׳' },
               ].map(({ cat, pts }) => (
