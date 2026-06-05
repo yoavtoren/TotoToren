@@ -1094,13 +1094,106 @@ function BrowseSection({ profiles }: { profiles: Profile[] }) {
   )
 }
 
+// ── Bracket Progress Section ──────────────────────────────────
+
+const BRACKET_STAGES = [
+  { key: 'r32',      label: 'סבב 32',      pts: 4,  color: 'text-white/70',    bg: 'bg-white/5' },
+  { key: 'r16',      label: 'שמינית גמר',  pts: 5,  color: 'text-blue-300',    bg: 'bg-blue-500/10' },
+  { key: 'qf',       label: 'רבע גמר',     pts: 6,  color: 'text-violet-300',  bg: 'bg-violet-500/10' },
+  { key: 'sf',       label: 'חצי גמר',     pts: 7,  color: 'text-amber-300',   bg: 'bg-amber-500/10' },
+  { key: 'final',    label: 'גמר',          pts: 8,  color: 'text-orange-300',  bg: 'bg-orange-500/10' },
+  { key: 'champion', label: 'אלוף 🏆',      pts: 15, color: 'text-yellow-300',  bg: 'bg-yellow-500/15' },
+] as const
+
+function BracketProgressSection({
+  realR32TeamIds, realR16TeamIds, realQFTeamIds,
+  realSFTeamIds, realFinalTeamIds, realChampionId,
+}: {
+  realR32TeamIds: Set<number>
+  realR16TeamIds: Set<number>
+  realQFTeamIds: Set<number>
+  realSFTeamIds: Set<number>
+  realFinalTeamIds: Set<number>
+  realChampionId: number | null
+}) {
+  const teamsByStage: Record<string, number[]> = {
+    r32:      [...realR32TeamIds],
+    r16:      [...realR16TeamIds],
+    qf:       [...realQFTeamIds],
+    sf:       [...realSFTeamIds],
+    final:    [...realFinalTeamIds],
+    champion: realChampionId ? [realChampionId] : [],
+  }
+
+  const hasAnyData = BRACKET_STAGES.some(s => teamsByStage[s.key].length > 0)
+
+  if (!hasAnyData) {
+    return (
+      <GlassCard className="text-center py-14">
+        <div className="text-5xl mb-4">🗂️</div>
+        <p className="text-white/50 text-sm">הנתונים יתעדכנו כשהמנהל יזין את תוצאות הנוקאאוט.</p>
+      </GlassCard>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {BRACKET_STAGES.map(({ key, label, pts, color, bg }) => {
+        const teams = teamsByStage[key]
+        if (teams.length === 0) return null
+        const isChampion = key === 'champion'
+        return (
+          <GlassCard key={key} className={cn('space-y-3', isChampion && 'ring-2 ring-yellow-400/30')}>
+            <div className="flex items-center justify-between">
+              <h3 className={cn('font-bold text-sm', color)}>{label}</h3>
+              <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-full', bg, color)}>
+                +{pts} נק׳ לניחוש נכון · {teams.length} {key === 'champion' ? 'נבחרת' : 'נבחרות'}
+              </span>
+            </div>
+            <div className={cn(
+              'grid gap-2',
+              isChampion ? 'grid-cols-1 max-w-xs mx-auto' :
+              teams.length <= 4 ? 'grid-cols-2 sm:grid-cols-4' :
+              teams.length <= 8 ? 'grid-cols-2 sm:grid-cols-4' :
+              'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8'
+            )}>
+              {teams.map(id => {
+                const team = getTeamById(id)
+                if (!team) return null
+                return (
+                  <div
+                    key={id}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2 rounded-xl',
+                      bg,
+                      isChampion && 'justify-center py-4'
+                    )}
+                  >
+                    <span className={cn('shrink-0', isChampion ? 'text-3xl' : 'text-lg')}>
+                      {getFlagEmoji(team.flag_code)}
+                    </span>
+                    <span className={cn('font-semibold truncate', isChampion ? 'text-base text-yellow-200' : 'text-sm text-white/85')}>
+                      {team.name}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </GlassCard>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────
 
-type Tab = 'standings' | 'live' | 'browse'
+type Tab = 'standings' | 'live' | 'browse' | 'bracket'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'standings', label: 'Standings', icon: '🏆' },
   { id: 'live',      label: 'Live',      icon: '⚽' },
+  { id: 'bracket',   label: 'סבבים',     icon: '🗂️' },
   { id: 'browse',    label: 'Browse',    icon: '🔍' },
 ]
 
@@ -1112,6 +1205,10 @@ export default function LeaderboardClient({
   realR32TeamIds = new Set(),
   realR16TeamIds = new Set(),
   realGroupStandings = {},
+  realQFTeamIds = new Set(),
+  realSFTeamIds = new Set(),
+  realFinalTeamIds = new Set(),
+  realChampionId = null,
 }: {
   initialScores: ScoreEntry[]
   allProfiles: Profile[]
@@ -1120,6 +1217,10 @@ export default function LeaderboardClient({
   realR32TeamIds?: Set<number>
   realR16TeamIds?: Set<number>
   realGroupStandings?: Record<string, number[]>
+  realQFTeamIds?: Set<number>
+  realSFTeamIds?: Set<number>
+  realFinalTeamIds?: Set<number>
+  realChampionId?: number | null
 }) {
   const [scores, setScores] = useState(initialScores)
   const [profiles, setProfiles] = useState(allProfiles)
@@ -1297,6 +1398,16 @@ export default function LeaderboardClient({
       {/* Tab content */}
       {tab === 'standings' && <StandingsSection entries={mergedEntries} futureMap={futureMap} myUserId={myUserId} onClickUser={openUserModal} />}
       {tab === 'live'      && <LiveSection />}
+      {tab === 'bracket'   && (
+        <BracketProgressSection
+          realR32TeamIds={realR32TeamIds}
+          realR16TeamIds={realR16TeamIds}
+          realQFTeamIds={realQFTeamIds}
+          realSFTeamIds={realSFTeamIds}
+          realFinalTeamIds={realFinalTeamIds}
+          realChampionId={realChampionId}
+        />
+      )}
       {tab === 'browse'    && <BrowseSection profiles={profiles} />}
     </div>
 
