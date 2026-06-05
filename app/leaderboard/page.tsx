@@ -9,7 +9,7 @@ export default async function LeaderboardPage() {
   const [{ data: scores }, { data: profiles }, { data: futures }, { data: completedMatches }, { data: r32Standings }, { data: r32Third }, { data: stageQuals }, { data: koResults }] = await Promise.all([
     supabase.from('scores').select('*, profiles(display_name, avatar_url)').order('total_score', { ascending: false }),
     supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
-    supabase.from('futures_predictions').select('user_id, champion_team_id'),
+    supabase.from('futures_predictions').select('user_id, champion_team_id, top_scorer_team_id, golden_boot_team_id, most_conceded_team_id, total_goals_prediction'),
     supabase.from('matches').select('id').not('home_score', 'is', null).not('away_score', 'is', null),
     supabase.from('group_actual_standings').select('group_letter, position, team_id').order('position'),
     supabase.from('r32_third_place_qualifiers').select('team_id'),

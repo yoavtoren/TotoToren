@@ -11,6 +11,10 @@ import { GROUP_LETTERS, TOURNAMENT_START } from '@/lib/constants'
 interface FuturePred {
   user_id: string
   champion_team_id: number | null
+  top_scorer_team_id: number | null
+  golden_boot_team_id: number | null
+  most_conceded_team_id: number | null
+  total_goals_prediction: number | null
 }
 
 // ── Types ─────────────────────────────────────────────────────
@@ -62,6 +66,34 @@ function outcomeOf(h: number, a: number) {
 
 function localShortDt(utc: string) {
   return new Date(utc).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+}
+
+// ── Stats helpers ─────────────────────────────────────────────
+
+// Change to false to show stats only after the first game kicks off
+const STATS_ALWAYS_VISIBLE = true
+
+function computeTop5Teams(
+  futures: FuturePred[],
+  key: 'champion_team_id' | 'top_scorer_team_id' | 'golden_boot_team_id' | 'most_conceded_team_id'
+): { top5: Array<{ teamId: number; count: number }>; otherCount: number; total: number } {
+  const counts: Record<number, number> = {}
+  let total = 0
+  for (const f of futures) {
+    const val = f[key]
+    if (val != null) {
+      counts[val] = (counts[val] ?? 0) + 1
+      total++
+    }
+  }
+  const sorted = Object.entries(counts)
+    .map(([id, count]) => ({ teamId: Number(id), count }))
+    .sort((a, b) => b.count - a.count)
+  return {
+    top5: sorted.slice(0, 5),
+    otherCount: sorted.slice(5).reduce((s, r) => s + r.count, 0),
+    total,
+  }
 }
 
 // ── Sub-components ────────────────────────────────────────────
@@ -820,6 +852,225 @@ function UserPredictionsModal({
   )
 }
 
+// ── Sub-component: Futures distribution bar card ──────────────
+
+function FuturesDistCard({
+  label,
+  emoji,
+  result,
+}: {
+  label: string
+  emoji: string
+  result: { top5: Array<{ teamId: number; count: number }>; otherCount: number; total: number }
+}) {
+  const { top5, otherCount, total } = result
+  if (total === 0) return (
+    <GlassCard className="space-y-2 py-3">
+      <p className="text-xs font-bold text-white/60">{emoji} {label}</p>
+      <p className="text-xs text-white/25 italic">אין ניחושים</p>
+    </GlassCard>
+  )
+  return (
+    <GlassCard className="space-y-2.5">
+      <p className="text-xs font-bold text-white/70 uppercase tracking-wider">{emoji} {label}</p>
+      <div className="space-y-1.5">
+        {top5.map(({ teamId, count }) => {
+          const team = getTeamById(teamId)
+          const pct = Math.round(count / total * 100)
+          return (
+            <div key={teamId} className="space-y-0.5">
+              <div className="flex items-center gap-1.5 text-xs">
+                {team && <span className="text-sm shrink-0">{getFlagEmoji(team.flag_code)}</span>}
+                <span className="flex-1 text-white/80 truncate">{team?.name ?? '?'}</span>
+                <span className="text-white/50 font-mono tabular-nums shrink-0">{count} · {pct}%</span>
+              </div>
+              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-400/50 rounded-full" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          )
+        })}
+        {otherCount > 0 && (
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-sm shrink-0">🌍</span>
+              <span className="flex-1 text-white/40 italic">אחר</span>
+              <span className="text-white/30 font-mono tabular-nums shrink-0">
+                {otherCount} · {Math.round(otherCount / total * 100)}%
+              </span>
+            </div>
+            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-white/20 rounded-full" style={{ width: `${Math.round(otherCount / total * 100)}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+    </GlassCard>
+  )
+}
+
+// ── Section: Stats ────────────────────────────────────────────
+
+function StatsSection({
+  allFutures,
+  firstPlaceUserId,
+  firstPlaceDisplayName,
+}: {
+  allFutures: FuturePred[]
+  firstPlaceUserId: string | null
+  firstPlaceDisplayName: string
+}) {
+  const [liveMatches, setLiveMatches] = useState(() => getInProgressMatches())
+  const [matchPreds, setMatchPreds] = useState<Record<number, Array<{
+    user_id: string
+    display_name: string
+    predicted_home: number
+    predicted_away: number
+  }>>>({})
+
+  useEffect(() => {
+    const id = setInterval(() => setLiveMatches(getInProgressMatches()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    if (liveMatches.length === 0) return
+    const supabase = createClient()
+    const ids = liveMatches.map(m => m.match)
+    supabase
+      .from('group_match_predictions')
+      .select('user_id, match_id, predicted_home, predicted_away, profiles(display_name)')
+      .in('match_id', ids)
+      .then(({ data }) => {
+        if (!data) return
+        const grouped: typeof matchPreds = {}
+        for (const r of data as any[]) {
+          if (!grouped[r.match_id]) grouped[r.match_id] = []
+          grouped[r.match_id].push({
+            user_id: r.user_id,
+            display_name: r.profiles?.display_name ?? 'Unknown',
+            predicted_home: r.predicted_home,
+            predicted_away: r.predicted_away,
+          })
+        }
+        setMatchPreds(grouped)
+      })
+  }, [liveMatches])
+
+  const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
+  if (!STATS_ALWAYS_VISIBLE && !tournamentStarted) return null
+
+  const top5Champion     = computeTop5Teams(allFutures, 'champion_team_id')
+  const top5TopScorer    = computeTop5Teams(allFutures, 'top_scorer_team_id')
+  const top5GoldenBoot   = computeTop5Teams(allFutures, 'golden_boot_team_id')
+  const top5MostConceded = computeTop5Teams(allFutures, 'most_conceded_team_id')
+
+  const goalsArr = allFutures
+    .filter(f => f.total_goals_prediction != null)
+    .map(f => f.total_goals_prediction as number)
+  const avgGoals = goalsArr.length > 0
+    ? (goalsArr.reduce((s, v) => s + v, 0) / goalsArr.length).toFixed(1)
+    : null
+
+  return (
+    <div className="space-y-4" dir="rtl">
+      <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest px-1">סטטיסטיקות ניחושים</h2>
+
+      {/* Live match stats — shown only when a match is in progress */}
+      {liveMatches.map(m => {
+        const preds = matchPreds[m.match] ?? []
+        const homeWins = preds.filter(p => p.predicted_home > p.predicted_away).length
+        const ties     = preds.filter(p => p.predicted_home === p.predicted_away).length
+        const awayWins = preds.filter(p => p.predicted_home < p.predicted_away).length
+        const total    = preds.length
+        const leaderPred = firstPlaceUserId ? preds.find(p => p.user_id === firstPlaceUserId) : null
+
+        return (
+          <GlassCard key={m.match} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Live</span>
+              <p className="text-sm font-semibold text-white">{m.home} נגד {m.away}</p>
+            </div>
+
+            {/* Outcome distribution */}
+            <div className="space-y-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-wider">
+                התפלגות ניחושים{total > 0 ? ` · ${total} משתתפים` : ''}
+              </p>
+              {[
+                { label: `${m.home} מנצחת (1)`, count: homeWins, color: 'bg-blue-500/60' },
+                { label: 'תיקו (X)',             count: ties,     color: 'bg-amber-500/60' },
+                { label: `${m.away} מנצחת (2)`, count: awayWins, color: 'bg-rose-500/60' },
+              ].map(({ label, count, color }) => (
+                <div key={label} className="space-y-0.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/70">{label}</span>
+                    <span className="text-white/50 font-mono tabular-nums">
+                      {count}{total > 0 ? ` · ${Math.round(count / total * 100)}%` : ''}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className={cn('h-full rounded-full transition-all', color)}
+                      style={{ width: `${total > 0 ? (count / total * 100) : 0}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Leader highlight — "היילייט פתיחת עין" */}
+            {leaderPred && (
+              <div className="glass rounded-xl px-3 py-2.5 border border-yellow-400/30 bg-yellow-500/5 space-y-1.5">
+                <p className="text-[10px] text-yellow-400/80 font-bold uppercase tracking-wider">
+                  👁 היילייט פתיחת עין · {firstPlaceDisplayName} (מקום 1)
+                </p>
+                <div className="flex items-center gap-4">
+                  <span className="font-mono font-bold text-white text-2xl tabular-nums" dir="ltr">
+                    {leaderPred.predicted_home} : {leaderPred.predicted_away}
+                  </span>
+                  <div className="space-y-0.5 text-xs">
+                    <div className="text-white/60">
+                      שערים: <span className="text-white font-bold">{leaderPred.predicted_home + leaderPred.predicted_away}</span>
+                    </div>
+                    <div>
+                      {leaderPred.predicted_home > leaderPred.predicted_away
+                        ? <span className="text-blue-300 font-semibold">{m.home} מנצחת</span>
+                        : leaderPred.predicted_home < leaderPred.predicted_away
+                          ? <span className="text-rose-300 font-semibold">{m.away} מנצחת</span>
+                          : <span className="text-amber-300 font-semibold">תיקו</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </GlassCard>
+        )
+      })}
+
+      {/* Constant futures distribution stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FuturesDistCard label="מי יהיה אלוף?" emoji="🏆" result={top5Champion} />
+        <FuturesDistCard label="הנבחרת הכי שערנית" emoji="⚽" result={top5TopScorer} />
+        <FuturesDistCard label="קבוצת עקב זהב" emoji="👟" result={top5GoldenBoot} />
+        <FuturesDistCard label="תספוג הכי הרבה שערים" emoji="🥅" result={top5MostConceded} />
+      </div>
+
+      {/* Average total goals across all user predictions */}
+      {avgGoals != null && (
+        <GlassCard className="flex items-center justify-between py-3">
+          <div>
+            <p className="text-sm font-semibold text-white">ממוצע שערים בטורניר</p>
+            <p className="text-xs text-white/40 mt-0.5">ממוצע ניחושי סך שערים מכלל המשתתפים ({goalsArr.length} ניחושים)</p>
+          </div>
+          <span className="text-3xl font-extrabold text-emerald-300 tabular-nums">{avgGoals}</span>
+        </GlassCard>
+      )}
+    </div>
+  )
+}
+
 // ── Section: Standings Table ──────────────────────────────────
 
 function StandingsSection({
@@ -1468,7 +1719,7 @@ export default function LeaderboardClient({
       // and the anon-key client would only return the current user's own row.
       const [{ data: s }, { data: f }, { data: { user } }] = await Promise.all([
         supabase.from('scores').select('*, profiles(display_name, avatar_url)').order('total_score', { ascending: false }),
-        supabase.from('futures_predictions').select('user_id, champion_team_id'),
+        supabase.from('futures_predictions').select('user_id, champion_team_id, top_scorer_team_id, golden_boot_team_id, most_conceded_team_id, total_goals_prediction'),
         supabase.auth.getUser(),
       ])
       if (s) setScores(s as ScoreEntry[])
@@ -1595,6 +1846,12 @@ export default function LeaderboardClient({
       {tab === 'standings' && (
         <div className="space-y-6">
           <StandingsSection entries={mergedEntries} futureMap={futureMap} myUserId={myUserId} onClickUser={openUserModal} />
+
+          <StatsSection
+            allFutures={futures}
+            firstPlaceUserId={mergedEntries[0]?.user_id ?? null}
+            firstPlaceDisplayName={mergedEntries[0]?.profiles?.display_name ?? ''}
+          />
 
           {/* Scoring system table */}
           <GlassCard className="space-y-3">
