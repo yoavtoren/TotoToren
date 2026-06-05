@@ -63,13 +63,17 @@ export async function POST(request: NextRequest) {
       if (order[1]) r32Teams.add(order[1])
     }
   }
-  for (const r of (thirdRows ?? []) as any[]) r32Teams.add(r.team_id)
-  const realR32Teams = r32Teams  // grows as admin confirms each group (max 24 + 8 = 32)
-
-  // groupStageComplete = all 12 groups + 8 third-place entered (used only for ADV_R16+ scoring)
+  // groupStageComplete = all 12 groups confirmed + 8 third-place qualifiers entered
   const all12GroupsEntered = Object.keys(actualStandingsMap).length === 12 &&
     Object.values(actualStandingsMap).every(arr => arr.filter(Boolean).length === 4)
   const groupStageComplete = all12GroupsEntered && (thirdRows ?? []).length === 8
+
+  // Third-place teams only join R32 once all groups are confirmed (can't rank 3rd-place until
+  // all 12 groups are done). Before that, only 1st+2nd from confirmed groups count.
+  if (groupStageComplete) {
+    for (const r of (thirdRows ?? []) as any[]) r32Teams.add(r.team_id)
+  }
+  const realR32Teams = r32Teams  // grows as admin confirms each group (max 24 + 8 = 32)
   const stageQual: Record<string, Set<number>> = { r16: new Set(), qf: new Set(), sf: new Set(), final: new Set() }
   for (const r of (stageRows ?? []) as any[]) { if (stageQual[r.stage]) stageQual[r.stage].add(r.team_id) }
 
@@ -153,8 +157,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 6.3 Advancement scoring
-    // ADV_R32 (+4): user's predicted R32 participants = 1st+2nd from each group they predicted
-    //               + their third-place selections
+    // ADV_R32 (+4): user's predicted R32 participants = 1st+2nd from each group they predicted.
+    // Third-place selections only count once all groups are confirmed (same as real tournament).
     const predR32Teams = new Set<number>()
     for (const g of [...new Set(userGP.map((r: any) => r.group_letter as string))]) {
       const ordered = userGP.filter((r: any) => r.group_letter === g)
@@ -162,7 +166,9 @@ export async function POST(request: NextRequest) {
       if (ordered[0]) predR32Teams.add(ordered[0].team_id)
       if (ordered[1]) predR32Teams.add(ordered[1].team_id)
     }
-    for (const t of userThird) predR32Teams.add(t.team_id)
+    if (groupStageComplete) {
+      for (const t of userThird) predR32Teams.add(t.team_id)
+    }
 
     // ADV_R16 (+5): teams the user predicted to WIN their R32 match
     const predR16Teams = new Set(
