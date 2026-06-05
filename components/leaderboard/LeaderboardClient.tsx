@@ -668,23 +668,54 @@ function UserPredictionsModal({
 
               {/* ── Knockout predictions ──────────────────── */}
               {preds.knockout.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <p className="text-[10px] text-white/40 uppercase tracking-widest">ניחושי נוקאאוט</p>
-                  {preds.knockout.map(k => {
-                    const winner = getTeamById(k.predicted_winner_id)
-                    return (
-                      <div key={k.match_num} className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl border bg-white/5 border-white/8">
-                        <span className="text-white/30 font-mono w-10 shrink-0">M{k.match_num}</span>
-                        {winner && <span className="shrink-0">{getFlagEmoji(winner.flag_code)}</span>}
-                        <span className="text-white/60 flex-1 truncate">{winner?.name ?? '—'} מנצחת</span>
-                        {(k.predicted_home_score != null && k.predicted_away_score != null) && (
-                          <span className="font-mono text-white/40 shrink-0" dir="ltr">
-                            {k.predicted_home_score}:{k.predicted_away_score}
+                  {(() => {
+                    const KO_R32 = new Set([73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88])
+                    const KO_R16 = new Set([89,90,91,92,93,94,95,96])
+                    const KO_QF  = new Set([97,98,99,100])
+                    const KO_SF  = new Set([101,102])
+                    return [...preds.knockout]
+                      .sort((a, b) => b.match_num - a.match_num)  // M104 first, M73 last
+                      .map(k => {
+                        const winner = getTeamById(k.predicted_winner_id)
+                        // Determine if predicted winner advanced to next round
+                        const advPts =
+                          KO_R32.has(k.match_num) && realR16TeamIds.has(k.predicted_winner_id) ? 5 :
+                          KO_R16.has(k.match_num) && realQFTeamIds.has(k.predicted_winner_id) ? 6 :
+                          KO_QF.has(k.match_num)  && realSFTeamIds.has(k.predicted_winner_id) ? 7 :
+                          KO_SF.has(k.match_num)  && realFinalTeamIds.has(k.predicted_winner_id) ? 8 :
+                          null
+                        const isWrong =
+                          (KO_R32.has(k.match_num) && realR16TeamIds.size > 0 && !realR16TeamIds.has(k.predicted_winner_id)) ||
+                          (KO_R16.has(k.match_num) && realQFTeamIds.size > 0  && !realQFTeamIds.has(k.predicted_winner_id)) ||
+                          (KO_QF.has(k.match_num)  && realSFTeamIds.size > 0  && !realSFTeamIds.has(k.predicted_winner_id)) ||
+                          (KO_SF.has(k.match_num)  && realFinalTeamIds.size > 0 && !realFinalTeamIds.has(k.predicted_winner_id))
+
+                      const rowBg = advPts != null ? 'bg-emerald-500/10 border-emerald-500/20' :
+                                    isWrong ? 'bg-rose-500/8 border-rose-500/15' : 'bg-white/5 border-white/8'
+                      return (
+                        <div key={k.match_num} className={cn('flex items-center gap-2 text-xs px-3 py-2 rounded-xl border', rowBg)}>
+                          <span className="text-white/30 font-mono w-10 shrink-0">M{k.match_num}</span>
+                          {winner && <span className="text-sm shrink-0">{getFlagEmoji(winner.flag_code)}</span>}
+                          <span className={cn('flex-1 truncate', advPts != null ? 'text-emerald-200' : isWrong ? 'text-white/35' : 'text-white/65')}>
+                            {winner?.name ?? '—'} מנצחת
                           </span>
-                        )}
-                      </div>
-                    )
-                  })}
+                          {k.predicted_home_score != null && k.predicted_away_score != null && (
+                            <span className="font-mono text-white/45 shrink-0 tabular-nums" dir="ltr">
+                              {k.predicted_home_score}:{k.predicted_away_score}
+                            </span>
+                          )}
+                          {advPts != null
+                            ? <span className="text-emerald-400 font-bold text-[11px] shrink-0">+{advPts}</span>
+                            : isWrong
+                              ? <span className="text-rose-400/60 text-[10px] shrink-0">✗</span>
+                              : <span className="text-white/20 text-[10px] shrink-0">—</span>
+                          }
+                        </div>
+                        )
+                      })
+                  })()}
                 </div>
               )}
 
