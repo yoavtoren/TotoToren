@@ -577,11 +577,11 @@ export default function AdminClient({
             sf: ['final','champion'], final: ['champion'], champion: [],
           }
           const stages = [
-            { key: 'r16',      label: 'שמינית גמר — 16 נבחרות', max: 16, pts: SCORING.ADV_R32,  pool: r32Pool },
-            { key: 'qf',       label: 'רבע גמר — 8 נבחרות',      max: 8,  pts: SCORING.ADV_R16,  pool: [...stageTeams.r16] },
-            { key: 'sf',       label: 'חצי גמר — 4 נבחרות',      max: 4,  pts: SCORING.ADV_QF,   pool: [...stageTeams.qf] },
-            { key: 'final',    label: 'גמר — 2 נבחרות',           max: 2,  pts: SCORING.ADV_SF,   pool: [...stageTeams.sf] },
-            { key: 'champion', label: '🏆 אלוף',                  max: 1,  pts: SCORING.ADV_FINAL, pool: [...stageTeams.final] },
+            { key: 'r16',      label: 'עולות לשמינית גמר — 16 נבחרות', max: 16, pts: SCORING.ADV_R16,          pool: r32Pool },
+            { key: 'qf',       label: 'עולות לרבע גמר — 8 נבחרות',     max: 8,  pts: SCORING.ADV_QF,           pool: [...stageTeams.r16] },
+            { key: 'sf',       label: 'עולות לחצי גמר — 4 נבחרות',     max: 4,  pts: SCORING.ADV_SF,           pool: [...stageTeams.qf] },
+            { key: 'final',    label: 'עולות לגמר — 2 נבחרות',          max: 2,  pts: SCORING.ADV_FINAL,        pool: [...stageTeams.sf] },
+            { key: 'champion', label: '🏆 אלוף',                         max: 1,  pts: SCORING.FUTURES_CHAMPION, pool: [...stageTeams.final] },
           ]
 
           return (
