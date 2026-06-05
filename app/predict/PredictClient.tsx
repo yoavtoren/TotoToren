@@ -264,19 +264,11 @@ export default function PredictClient({
           </p>
         </div>
 
-        {isLocked ? (
+        {isLocked && (
           <GlassCard className="flex items-center gap-2 px-4 py-2 shrink-0">
             <span className="text-lg">🔒</span>
             <span className="text-sm font-semibold text-white/70">הניחושים נעולים</span>
           </GlassCard>
-        ) : (
-          <div className="flex items-center gap-3 shrink-0">
-            {saveError && <p className="text-sm text-red-400 max-w-[200px]">{saveError}</p>}
-            {saveSuccess && <p className="text-sm text-emerald-400">✓ נשמר!</p>}
-            <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}>
-              {saving ? 'שומר…' : '💾 שמור ניחושים'}
-            </GlassButton>
-          </div>
         )}
       </div>
 
@@ -331,13 +323,15 @@ export default function PredictClient({
         />
       </SectionWrapper>
 
-      {/* Sticky mobile save */}
+      {/* Floating save button — fixed top-left always visible */}
       {!isLocked && (
-        <div className="fixed bottom-6 right-6 sm:hidden z-50">
+        <div className="fixed top-20 left-4 z-50 flex flex-col items-start gap-1">
           <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}
-            className="shadow-2xl glow-indigo">
-            {saving ? '…' : '💾'}
+            className="shadow-2xl">
+            {saving ? 'שומר…' : '💾 שמור ניחושים'}
           </GlassButton>
+          {saveError && <p className="text-xs text-red-400 bg-black/60 rounded px-2 py-0.5 max-w-[180px]">{saveError}</p>}
+          {saveSuccess && <p className="text-xs text-emerald-400 bg-black/60 rounded px-2 py-0.5">✓ נשמר!</p>}
         </div>
       )}
     </div>
