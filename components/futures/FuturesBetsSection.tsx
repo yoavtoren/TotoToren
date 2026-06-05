@@ -183,7 +183,7 @@ export default function FuturesBetsSection({ futures, onSet, disabled, bracketCh
         <div className="h-px bg-white/10" />
 
         <TeamPicker
-          label="הנבחרת הכי שערנית"
+          label="הנבחרת שכבשה הכי הרבה"
           hint="איזו נבחרת תבקיע הכי הרבה שערים בטורניר?"
           points={8}
           value={futures.top_scorer_team_id}
