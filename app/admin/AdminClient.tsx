@@ -554,8 +554,8 @@ export default function AdminClient({
           for (const id of thirdQualifiers) r32Set.add(id)
           const r32Pool = [...r32Set]
 
-          // Only show this section once R32 pool is complete (32 teams)
-          if (r32Pool.length < 32) return null
+          // Show as soon as there are any R32 teams to work with
+          if (r32Pool.length === 0) return null
 
           const nextOf: Record<string, string[]> = {
             r16: ['qf','sf','final','champion'], qf: ['sf','final','champion'],
@@ -756,13 +756,18 @@ export default function AdminClient({
             { stage: 'sf',    label: 'עלו לגמר',           pts: 8 },
             { stage: 'final', label: 'אלוף',               pts: 15 },
           ]
-          // Auto-derive R32 qualifiers: 1st + 2nd from each group with entered standings
+          // Auto-derive R32 qualifiers: 1st + 2nd from each group + saved 3rd-place qualifiers
           const r32Auto: number[] = []
           for (const g of GROUP_LETTERS) {
             const order = standings[g] ?? []
             if (order[0]) r32Auto.push(order[0])
             if (order[1]) r32Auto.push(order[1])
           }
+          // Include the manually-saved 3rd-place qualifiers in the R32 display
+          for (const id of thirdQualifiers) {
+            if (!r32Auto.includes(id)) r32Auto.push(id)
+          }
+          const r32Total = 24 + 8  // max: 24 from groups + 8 third-place
 
           return (
             <section style={{ marginTop: 24 }}>
@@ -778,9 +783,9 @@ export default function AdminClient({
                 <div style={{ background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: 10, padding: '12px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r32Auto.length > 0 ? 10 : 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>שלב 32 — מקומות 1+2 בכל בית</span>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: r32Auto.length === 24 ? '#c6f6d5' : '#e2e8f0', color: r32Auto.length === 24 ? '#276749' : '#718096' }}>
-                        {r32Auto.length}/24 אוטומטי
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>שלב 32 — 1+2 מכל בית + מקום שלישי</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: r32Auto.length === r32Total ? '#c6f6d5' : '#e2e8f0', color: r32Auto.length === r32Total ? '#276749' : '#718096' }}>
+                        {r32Auto.length}/{r32Total}
                       </span>
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 700, color: '#2b6cb0', background: '#bee3f8', padding: '3px 10px', borderRadius: 20 }}>
