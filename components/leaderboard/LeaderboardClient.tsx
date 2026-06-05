@@ -1019,7 +1019,7 @@ function StatsSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { label: 'מי יהיה אלוף?',          emoji: '🏆' },
-            { label: 'הנבחרת הכי שערנית',       emoji: '⚽' },
+            { label: 'הנבחרת שתכבוש הכי הרבה',       emoji: '⚽' },
             { label: 'קבוצת עקב זהב',           emoji: '👟' },
             { label: 'תספוג הכי הרבה שערים',    emoji: '🥅' },
           ].map(({ label, emoji }) => (
@@ -1105,7 +1105,7 @@ function StatsSection({
             <span className="text-4xl leading-none">{awayFlag}</span>
             <div className="text-left">
               <p className="text-base font-bold text-white leading-tight">{m.away}</p>
-              <p className="text-[10px] text-white/35 uppercase tracking-wider">אורח</p>
+              <p className="text-[10px] text-white/35 uppercase tracking-wider">חוץ</p>
             </div>
           </div>
         </div>
