@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { usePredictSave } from '@/contexts/predict-save'
 import { usePredictions } from '@/hooks/usePredictions'
 import { useWhistle } from '@/lib/useWhistle'
 import GroupMatchScorelineSection from '@/components/groups/GroupMatchScorelineSection'
@@ -136,6 +137,7 @@ export default function PredictClient({
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const { registerSave, unregisterSave, setSaving: setCtxSaving } = usePredictSave()
   const [whistleEnabled, setWhistleEnabled] = useState(true)
   const playWhistle = useWhistle(whistleEnabled)
 
@@ -250,8 +252,16 @@ export default function PredictClient({
       setSaveError(e instanceof Error ? e.message : 'Save failed')
     } finally {
       setSaving(false)
+      setCtxSaving(false)
     }
   }
+
+  useEffect(() => {
+    registerSave(handleSave)
+    return () => unregisterSave()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { setCtxSaving(saving) }, [saving])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 pb-28 sm:pb-8">
@@ -323,19 +333,9 @@ export default function PredictClient({
         />
       </SectionWrapper>
 
-      {/* Floating save button — fixed bottom-center */}
-      {!isLocked && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}
-            className="shadow-2xl px-8 py-3 text-base rounded-2xl">
-            {saving ? 'שומר…' : '💾 שמור ניחושים'}
-          </GlassButton>
-        </div>
-      )}
-
       {/* Toast notification */}
       {saveSuccess && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] animate-bounce-in">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] animate-bounce-in pointer-events-none">
           <div className="flex items-center gap-2 bg-emerald-600 text-white text-base font-bold px-6 py-3 rounded-2xl shadow-2xl">
             <span className="text-xl">✓</span>
             <span>הניחושים נשמרו!</span>
@@ -343,7 +343,7 @@ export default function PredictClient({
         </div>
       )}
       {saveError && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60]">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] pointer-events-none">
           <div className="flex items-center gap-2 bg-red-600 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl max-w-[280px] text-center">
             <span>❌ {saveError}</span>
           </div>

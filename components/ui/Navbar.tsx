@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import { cn } from '@/lib/utils'
 import type { Profile } from '@/types'
+import { usePredictSave } from '@/contexts/predict-save'
 
 const NAV_LINKS = [
   { href: '/',            label: 'בית' },
@@ -23,6 +24,8 @@ export default function Navbar() {
   const [profile, setProfile] = useState<Pick<Profile, 'display_name' | 'avatar_url'> | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const supabase = createClient()
+  const { triggerSave, saving } = usePredictSave()
+  const onPredict = pathname === '/predict'
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -107,6 +110,17 @@ export default function Navbar() {
               </Link>
             )}
           </div>
+
+          {/* Mobile save button — only on /predict */}
+          {onPredict && (
+            <button
+              className="sm:hidden glass-btn-primary px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60"
+              onClick={triggerSave}
+              disabled={saving}
+            >
+              {saving ? 'שומר…' : '💾 שמור'}
+            </button>
+          )}
 
           {/* Mobile hamburger */}
           <button
