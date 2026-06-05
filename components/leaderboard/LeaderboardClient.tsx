@@ -307,8 +307,83 @@ function UserPredictionsModal({
           )}
 
           {!loading && preds && modalTab === 'scoring' && (
-            <div className="space-y-4 pt-1">
-              <p className="text-xs text-white/40">ניקוד למשחקים שהסתיימו</p>
+            <div className="space-y-5 pt-1">
+
+              {/* ── Score summary by category ────────────── */}
+              {entry && (
+                <div className="glass rounded-xl p-3 space-y-1.5">
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest mb-2">סיכום ניקוד לפי קטגוריה</p>
+                  {[
+                    { label: 'משחקי שלב בתים', sub: '1X2 · שערים · תוצאה מדויקת', pts: entry.group_match_points, color: 'text-blue-300' },
+                    { label: 'דירוגי בתים', sub: `${Math.round(entry.group_standing_points / 3)} מיקומים נכונים`, pts: entry.group_standing_points, color: 'text-purple-300' },
+                    { label: 'התקדמות קבוצות', sub: 'לפי שלב (R32/R16/QF/SF/גמר)', pts: entry.advancement_points, color: 'text-teal-300' },
+                    { label: 'תוצאות נוקאאוט', sub: 'שערים ותוצאה מדויקת בנוקאאוט', pts: entry.knockout_score_points, color: 'text-emerald-300' },
+                    { label: 'ניחושי עתידיות', sub: 'אלוף, כובש, ושאר', pts: entry.futures_points, color: 'text-amber-300' },
+                  ].map(({ label, sub, pts, color }) => (
+                    <div key={label} className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-sm text-white/70">{label}</span>
+                        <span className="text-[10px] text-white/30 mr-1.5">{sub}</span>
+                      </div>
+                      <span className={cn('text-sm font-bold tabular-nums shrink-0', pts > 0 ? color : 'text-white/20')}>
+                        {pts > 0 ? `+${pts}` : '—'}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="border-t border-white/10 mt-2 pt-2 flex items-center justify-between">
+                    <span className="text-sm font-bold text-white">סה״כ</span>
+                    <span className="text-sm font-extrabold text-white tabular-nums">+{entry.total_score}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Group standings predictions ───────────── */}
+              {Object.keys(preds.groupStandings).length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest">דירוגי הבתים שניחשת</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {GROUP_LETTERS.filter(g => preds.groupStandings[g]?.length).map(g => (
+                      <div key={g} className="glass rounded-xl p-2.5 space-y-1">
+                        <p className="text-[10px] font-bold text-white/50 uppercase">בית {g}</p>
+                        {preds.groupStandings[g].map((teamId, i) => {
+                          const team = getTeamById(teamId)
+                          return (
+                            <div key={teamId} className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-white/30 w-3 shrink-0">{i + 1}.</span>
+                              {team && <span className="text-xs shrink-0">{getFlagEmoji(team.flag_code)}</span>}
+                              <span className="text-[11px] text-white/60 truncate">{team?.name ?? '—'}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Knockout predictions ──────────────────── */}
+              {preds.knockout.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest">ניחושי נוקאאוט</p>
+                  {preds.knockout.map(k => {
+                    const winner = getTeamById(k.predicted_winner_id)
+                    return (
+                      <div key={k.match_num} className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl border bg-white/5 border-white/8">
+                        <span className="text-white/30 font-mono w-10 shrink-0">M{k.match_num}</span>
+                        {winner && <span className="shrink-0">{getFlagEmoji(winner.flag_code)}</span>}
+                        <span className="text-white/60 flex-1 truncate">{winner?.name ?? '—'} מנצחת</span>
+                        {(k.predicted_home_score != null && k.predicted_away_score != null) && (
+                          <span className="font-mono text-white/40 shrink-0" dir="ltr">
+                            {k.predicted_home_score}:{k.predicted_away_score}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              <p className="text-xs text-white/30">ניקוד משחקי שלב הבתים:</p>
               {(() => {
                 // Show matches where admin entered a result OR match already kicked off by date
                 const played = (matchId: number) =>
