@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { getTeamById, getFlagEmoji, TEAMS } from '@/data/teams'
 import { GROUP_LETTERS } from '@/lib/constants'
+import { SCORING } from '@/lib/scoring.config'
 import type { Match } from '@/types'
 
 const ROUND_LABELS: Record<string, string> = {
@@ -540,6 +541,110 @@ export default function AdminClient({
             </button>
           </div>
         </section>
+
+        {/* ── Knockout stage qualifiers (R16 → QF → SF → Final → Champion) ── */}
+        {(() => {
+          // Build R32 pool from confirmed group standings + 3rd-place qualifiers
+          const r32Set = new Set<number>()
+          for (const g of GROUP_LETTERS) {
+            const s = standings[g] ?? []
+            if (s[0]) r32Set.add(s[0])
+            if (s[1]) r32Set.add(s[1])
+          }
+          for (const id of thirdQualifiers) r32Set.add(id)
+          const r32Pool = [...r32Set]
+
+          // Only show this section once R32 pool is complete (32 teams)
+          if (r32Pool.length < 32) return null
+
+          const nextOf: Record<string, string[]> = {
+            r16: ['qf','sf','final','champion'], qf: ['sf','final','champion'],
+            sf: ['final','champion'], final: ['champion'], champion: [],
+          }
+          const stages = [
+            { key: 'r16',      label: 'שמינית גמר — 16 נבחרות', max: 16, pts: SCORING.ADV_R32,  pool: r32Pool },
+            { key: 'qf',       label: 'רבע גמר — 8 נבחרות',      max: 8,  pts: SCORING.ADV_R16,  pool: [...stageTeams.r16] },
+            { key: 'sf',       label: 'חצי גמר — 4 נבחרות',      max: 4,  pts: SCORING.ADV_QF,   pool: [...stageTeams.qf] },
+            { key: 'final',    label: 'גמר — 2 נבחרות',           max: 2,  pts: SCORING.ADV_SF,   pool: [...stageTeams.sf] },
+            { key: 'champion', label: '🏆 אלוף',                  max: 1,  pts: SCORING.ADV_FINAL, pool: [...stageTeams.final] },
+          ]
+
+          return (
+            <section style={{ marginTop: 24 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#4a5568', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
+                בחירת נבחרות לכל שלב נוקאאוט
+              </h2>
+              <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+                בחר את הנבחרות שעברו בכל שלב ולחץ 💾 לשמירה ועדכון ניקוד.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {stages.map(({ key, label, max, pts, pool }) => {
+                  const selected = stageTeams[key as keyof typeof stageTeams]
+                  const done = selected.size
+                  return (
+                    <div key={key} style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600,
+                            background: done === max ? '#c6f6d5' : '#e2e8f0',
+                            color: done === max ? '#276749' : '#718096' }}>{done}/{max}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: '#3182ce', background: '#ebf8ff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>+{pts} נק׳ לנבחרת</span>
+                          <button
+                            onClick={async () => {
+                              await handleSaveStage(key, selected)
+                              const calcRes = await fetch('/api/scores/recalculate', { method: 'POST', headers: authHeaders })
+                              const d = await calcRes.json()
+                              if (!calcRes.ok) showToast(`שגיאה: ${d.error}`, false)
+                              else showToast(`נשמר ✓ ${d.message ?? ''}`)
+                            }}
+                            disabled={savingStage === key}
+                            style={{ padding: '5px 14px', borderRadius: 7, border: 'none', background: done > 0 ? '#276749' : '#a0aec0', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                          >{savingStage === key ? '…' : '💾 שמור + עדכן ניקוד'}</button>
+                        </div>
+                      </div>
+                      {pool.length === 0 ? (
+                        <p style={{ fontSize: 12, color: '#a0aec0', margin: 0 }}>— בחר נבחרות בשלב הקודם תחילה —</p>
+                      ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+                          {pool.map(id => {
+                            const t = getTeamById(id)
+                            if (!t) return null
+                            const checked = selected.has(id)
+                            const disabled = !checked && done >= max
+                            return (
+                              <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8,
+                                border: `1px solid ${checked ? '#68d391' : '#e2e8f0'}`,
+                                background: checked ? '#f0fff4' : disabled ? '#fafafa' : '#fff',
+                                cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1 }}>
+                                <input
+                                  type={max === 1 ? 'radio' : 'checkbox'}
+                                  name={max === 1 ? `stage-${key}` : undefined}
+                                  checked={checked} disabled={disabled}
+                                  onChange={() => {
+                                    if (max === 1) {
+                                      setStageTeams(prev => ({ ...prev, [key]: new Set([id]) }))
+                                    } else {
+                                      toggleStageTeam(key, id, nextOf[key] ?? [])
+                                    }
+                                  }}
+                                />
+                                <span style={{ fontSize: 18 }}>{getFlagEmoji(t.flag_code)}</span>
+                                <span style={{ fontSize: 12, fontWeight: checked ? 700 : 400 }}>{t.name}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )
+        })()}
 
         {/* Knockout */}
         {knockoutMatches.length > 0 && (
