@@ -81,16 +81,16 @@ function NextMatchHero() {
         <p className="text-xs text-white/40">{localDate(next.kickoff_utc)} · {localShortTime(next.kickoff_utc)} שעון מקומי</p>
       </div>
       <p className="text-sm text-white/50 uppercase tracking-widest">המשחק הבא מתחיל בעוד</p>
-      <div className="flex items-center justify-center gap-3 sm:gap-4">
+      <div className="flex items-center justify-center gap-1.5 sm:gap-4">
         {units.map(({ v, l }, i, arr) => (
-          <div key={l} className="flex items-center gap-3 sm:gap-4">
-            <GlassCard className="min-w-[72px] sm:min-w-[88px] py-4 text-center card-accent">
-              <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-white">
+          <div key={l} className="flex items-center gap-1.5 sm:gap-4">
+            <GlassCard className="w-[62px] sm:w-[88px] py-3 sm:py-4 text-center card-accent">
+              <div className="text-2xl sm:text-4xl font-bold font-mono tabular-nums text-white">
                 {pad(v)}
               </div>
-              <div className="text-[10px] sm:text-xs text-white/50 tracking-widest mt-1">{l}</div>
+              <div className="text-[9px] sm:text-xs text-white/50 tracking-widest mt-1">{l}</div>
             </GlassCard>
-            {i < arr.length - 1 && <span className="text-2xl font-bold text-white/30 -mt-4">:</span>}
+            {i < arr.length - 1 && <span className="text-lg sm:text-2xl font-bold text-white/30 -mt-4">:</span>}
           </div>
         ))}
       </div>
@@ -114,30 +114,30 @@ function MatchRow({ m, showDate = false }: { m: (typeof GROUP_MATCHES)[0]; showD
   const homeT = teamByName(m.home)
   const awayT = teamByName(m.away)
   return (
-    <div dir="ltr" className={cn('flex items-center gap-3 px-4 py-3', past && 'opacity-40')}>
+    <div dir="ltr" className={cn('flex items-center gap-2 px-3 py-3', past && 'opacity-40')}>
       {/* Time */}
-      <div className="w-20 shrink-0 text-left">
-        {showDate && <p className="text-[10px] text-white/40 font-mono">{localDate(m.kickoff_utc)}</p>}
+      <div className="w-12 shrink-0 text-left">
+        {showDate && <p className="text-[9px] text-white/40 font-mono leading-tight">{localDate(m.kickoff_utc)}</p>}
         <p className="text-xs font-mono font-semibold text-white/80">{localShortTime(m.kickoff_utc)}</p>
         <p className="text-[9px] text-white/25 mt-0.5">בית {(m as any).group}</p>
       </div>
 
       {/* Home */}
-      <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-        <span className="text-xs text-white font-medium truncate">{m.home}</span>
-        {homeT && <span className="text-base shrink-0">{getFlagEmoji(homeT.flag_code)}</span>}
+      <div className="flex items-center gap-1 flex-1 justify-end min-w-0">
+        <span className="text-[11px] text-white font-medium text-right leading-tight">{m.home}</span>
+        {homeT && <span className="text-sm shrink-0">{getFlagEmoji(homeT.flag_code)}</span>}
       </div>
 
       <span className="text-white/25 text-xs font-bold shrink-0">–</span>
 
       {/* Away */}
-      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-        {awayT && <span className="text-base shrink-0">{getFlagEmoji(awayT.flag_code)}</span>}
-        <span className="text-xs text-white font-medium truncate">{m.away}</span>
+      <div className="flex items-center gap-1 flex-1 min-w-0">
+        {awayT && <span className="text-sm shrink-0">{getFlagEmoji(awayT.flag_code)}</span>}
+        <span className="text-[11px] text-white font-medium leading-tight">{m.away}</span>
       </div>
 
       {/* Countdown */}
-      <div className="w-24 text-right shrink-0">
+      <div className="w-[72px] text-right shrink-0">
         {past
           ? <span className="text-[10px] text-white/25">הסתיים</span>
           : <CountdownBadge targetUtc={m.kickoff_utc} />}
