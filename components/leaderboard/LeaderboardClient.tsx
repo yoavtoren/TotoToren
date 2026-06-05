@@ -58,6 +58,13 @@ function getInProgressMatches() {
   })
 }
 
+function getNextGroupMatch() {
+  const now = Date.now()
+  return GROUP_MATCHES
+    .filter(m => new Date(m.kickoff_utc).getTime() > now)
+    .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())[0] ?? null
+}
+
 function outcomeOf(h: number, a: number) {
   if (h > a) return <span className="text-blue-300 font-bold text-xs">1</span>
   if (a > h) return <span className="text-rose-300 font-bold text-xs">2</span>
@@ -932,6 +939,7 @@ function StatsSection({
   firstPlaceDisplayName: string
 }) {
   const [liveMatches, setLiveMatches] = useState(() => getInProgressMatches())
+  const [nextMatch, setNextMatch]     = useState(() => getNextGroupMatch())
   const [matchPreds, setMatchPreds] = useState<Record<number, Array<{
     user_id: string
     display_name: string
@@ -940,14 +948,21 @@ function StatsSection({
   }>>>({})
 
   useEffect(() => {
-    const id = setInterval(() => setLiveMatches(getInProgressMatches()), 30_000)
+    const id = setInterval(() => {
+      setLiveMatches(getInProgressMatches())
+      setNextMatch(getNextGroupMatch())
+    }, 30_000)
     return () => clearInterval(id)
   }, [])
 
   useEffect(() => {
-    if (liveMatches.length === 0) return
+    const liveIds = liveMatches.map(m => m.match)
+    // When STATS_ALWAYS_VISIBLE also pre-fetch the next upcoming match
+    const nextId = STATS_ALWAYS_VISIBLE && nextMatch && !liveIds.includes(nextMatch.match)
+      ? [nextMatch.match] : []
+    const ids = [...liveIds, ...nextId]
+    if (ids.length === 0) return
     const supabase = createClient()
-    const ids = liveMatches.map(m => m.match)
     supabase
       .from('group_match_predictions')
       .select('user_id, match_id, predicted_home, predicted_away, profiles(display_name)')
@@ -966,7 +981,7 @@ function StatsSection({
         }
         setMatchPreds(grouped)
       })
-  }, [liveMatches])
+  }, [liveMatches, nextMatch])
 
   const tournamentStarted = Date.now() >= new Date(TOURNAMENT_START).getTime()
   if (!STATS_ALWAYS_VISIBLE && !tournamentStarted) return null
@@ -983,82 +998,92 @@ function StatsSection({
     ? (goalsArr.reduce((s, v) => s + v, 0) / goalsArr.length).toFixed(1)
     : null
 
+  // Renders prediction distribution + leader highlight for a match
+  const renderMatchCard = (m: typeof GROUP_MATCHES[0], isLive: boolean) => {
+    const preds = matchPreds[m.match] ?? []
+    const homeWins = preds.filter(p => p.predicted_home > p.predicted_away).length
+    const ties     = preds.filter(p => p.predicted_home === p.predicted_away).length
+    const awayWins = preds.filter(p => p.predicted_home < p.predicted_away).length
+    const total    = preds.length
+    const leaderPred = firstPlaceUserId ? preds.find(p => p.user_id === firstPlaceUserId) : null
+    return (
+      <GlassCard key={m.match} className="space-y-3">
+        <div className="flex items-center gap-2">
+          {isLive
+            ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Live</span>
+            : <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-bold tracking-wider">הבא ▶ {localShortDt(m.kickoff_utc)}</span>
+          }
+          <p className="text-sm font-semibold text-white">{m.home} נגד {m.away}</p>
+        </div>
+
+        {/* Outcome distribution */}
+        <div className="space-y-2">
+          <p className="text-[10px] text-white/40 uppercase tracking-wider">
+            התפלגות ניחושים{total > 0 ? ` · ${total} משתתפים` : ''}
+          </p>
+          {[
+            { label: `${m.home} מנצחת (1)`, count: homeWins, color: 'bg-blue-500/60' },
+            { label: 'תיקו (X)',             count: ties,     color: 'bg-amber-500/60' },
+            { label: `${m.away} מנצחת (2)`, count: awayWins, color: 'bg-rose-500/60' },
+          ].map(({ label, count, color }) => (
+            <div key={label} className="space-y-0.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-white/70">{label}</span>
+                <span className="text-white/50 font-mono tabular-nums">
+                  {count}{total > 0 ? ` · ${Math.round(count / total * 100)}%` : ''}
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={cn('h-full rounded-full transition-all', color)}
+                  style={{ width: `${total > 0 ? (count / total * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Leader highlight — "היילייט פתיחת עין" */}
+        {leaderPred && (
+          <div className="glass rounded-xl px-3 py-2.5 border border-yellow-400/30 bg-yellow-500/5 space-y-1.5">
+            <p className="text-[10px] text-yellow-400/80 font-bold uppercase tracking-wider">
+              👁 היילייט פתיחת עין · {firstPlaceDisplayName} (מקום 1)
+            </p>
+            <div className="flex items-center gap-4">
+              <span className="font-mono font-bold text-white text-2xl tabular-nums" dir="ltr">
+                {leaderPred.predicted_home} : {leaderPred.predicted_away}
+              </span>
+              <div className="space-y-0.5 text-xs">
+                <div className="text-white/60">
+                  שערים: <span className="text-white font-bold">{leaderPred.predicted_home + leaderPred.predicted_away}</span>
+                </div>
+                <div>
+                  {leaderPred.predicted_home > leaderPred.predicted_away
+                    ? <span className="text-blue-300 font-semibold">{m.home} מנצחת</span>
+                    : leaderPred.predicted_home < leaderPred.predicted_away
+                      ? <span className="text-rose-300 font-semibold">{m.away} מנצחת</span>
+                      : <span className="text-amber-300 font-semibold">תיקו</span>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </GlassCard>
+    )
+  }
+
   return (
     <div className="space-y-4" dir="rtl">
       <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest px-1">סטטיסטיקות ניחושים</h2>
 
-      {/* Live match stats — shown only when a match is in progress */}
-      {liveMatches.map(m => {
-        const preds = matchPreds[m.match] ?? []
-        const homeWins = preds.filter(p => p.predicted_home > p.predicted_away).length
-        const ties     = preds.filter(p => p.predicted_home === p.predicted_away).length
-        const awayWins = preds.filter(p => p.predicted_home < p.predicted_away).length
-        const total    = preds.length
-        const leaderPred = firstPlaceUserId ? preds.find(p => p.user_id === firstPlaceUserId) : null
+      {/* Live matches */}
+      {liveMatches.map(m => renderMatchCard(m, true))}
 
-        return (
-          <GlassCard key={m.match} className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Live</span>
-              <p className="text-sm font-semibold text-white">{m.home} נגד {m.away}</p>
-            </div>
-
-            {/* Outcome distribution */}
-            <div className="space-y-2">
-              <p className="text-[10px] text-white/40 uppercase tracking-wider">
-                התפלגות ניחושים{total > 0 ? ` · ${total} משתתפים` : ''}
-              </p>
-              {[
-                { label: `${m.home} מנצחת (1)`, count: homeWins, color: 'bg-blue-500/60' },
-                { label: 'תיקו (X)',             count: ties,     color: 'bg-amber-500/60' },
-                { label: `${m.away} מנצחת (2)`, count: awayWins, color: 'bg-rose-500/60' },
-              ].map(({ label, count, color }) => (
-                <div key={label} className="space-y-0.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-white/70">{label}</span>
-                    <span className="text-white/50 font-mono tabular-nums">
-                      {count}{total > 0 ? ` · ${Math.round(count / total * 100)}%` : ''}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={cn('h-full rounded-full transition-all', color)}
-                      style={{ width: `${total > 0 ? (count / total * 100) : 0}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Leader highlight — "היילייט פתיחת עין" */}
-            {leaderPred && (
-              <div className="glass rounded-xl px-3 py-2.5 border border-yellow-400/30 bg-yellow-500/5 space-y-1.5">
-                <p className="text-[10px] text-yellow-400/80 font-bold uppercase tracking-wider">
-                  👁 היילייט פתיחת עין · {firstPlaceDisplayName} (מקום 1)
-                </p>
-                <div className="flex items-center gap-4">
-                  <span className="font-mono font-bold text-white text-2xl tabular-nums" dir="ltr">
-                    {leaderPred.predicted_home} : {leaderPred.predicted_away}
-                  </span>
-                  <div className="space-y-0.5 text-xs">
-                    <div className="text-white/60">
-                      שערים: <span className="text-white font-bold">{leaderPred.predicted_home + leaderPred.predicted_away}</span>
-                    </div>
-                    <div>
-                      {leaderPred.predicted_home > leaderPred.predicted_away
-                        ? <span className="text-blue-300 font-semibold">{m.home} מנצחת</span>
-                        : leaderPred.predicted_home < leaderPred.predicted_away
-                          ? <span className="text-rose-300 font-semibold">{m.away} מנצחת</span>
-                          : <span className="text-amber-300 font-semibold">תיקו</span>
-                      }
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </GlassCard>
-        )
-      })}
+      {/* Next upcoming match (visible when STATS_ALWAYS_VISIBLE) */}
+      {STATS_ALWAYS_VISIBLE && nextMatch && !liveMatches.some(lm => lm.match === nextMatch.match) &&
+        renderMatchCard(nextMatch, false)
+      }
 
       {/* Constant futures distribution stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
