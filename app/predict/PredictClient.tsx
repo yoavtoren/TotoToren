@@ -274,11 +274,19 @@ export default function PredictClient({
           </p>
         </div>
 
-        {isLocked && (
+        {isLocked ? (
           <GlassCard className="flex items-center gap-2 px-4 py-2 shrink-0">
             <span className="text-lg">🔒</span>
             <span className="text-sm font-semibold text-white/70">הניחושים נעולים</span>
           </GlassCard>
+        ) : (
+          <div className="hidden sm:flex items-center gap-3 shrink-0">
+            {saveError && <p className="text-sm text-red-400 max-w-[200px]">{saveError}</p>}
+            {saveSuccess && <p className="text-sm text-emerald-400">✓ נשמר!</p>}
+            <GlassButton variant="primary" size="lg" onClick={handleSave} disabled={saving}>
+              {saving ? 'שומר…' : '💾 שמור ניחושים'}
+            </GlassButton>
+          </div>
         )}
       </div>
 
