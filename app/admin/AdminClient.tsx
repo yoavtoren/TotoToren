@@ -534,8 +534,8 @@ export default function AdminClient({
             </div>
             <button
               onClick={handleSaveQualifiers}
-              disabled={savingQualifiers || thirdQualifiers.size !== 8}
-              style={{ padding: '8px 20px', borderRadius: 7, border: 'none', background: thirdQualifiers.size === 8 ? '#276749' : '#a0aec0', color: '#fff', fontSize: 13, fontWeight: 600, cursor: thirdQualifiers.size === 8 ? 'pointer' : 'not-allowed' }}
+              disabled={savingQualifiers}
+              style={{ padding: '8px 20px', borderRadius: 7, border: 'none', background: thirdQualifiers.size === 8 ? '#276749' : '#3182ce', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             >
               {savingQualifiers ? 'שומר…' : `💾 שמור (${thirdQualifiers.size}/8 נבחרו)`}
             </button>
