@@ -397,18 +397,25 @@ function UserPredictionsModal({
                 </div>
               )}
 
-              {/* ── R32 advancement breakdown ─────────────── */}
+              {/* ── R32 advancement breakdown — per group ───── */}
               {realR32TeamIds.size > 0 && preds && (() => {
-                // User's predicted R32: top-2 per group + 3rd-place selections
-                const predR32 = new Set<number>()
-                for (const teams of Object.values(preds.groupStandings)) {
-                  if (teams[0]) predR32.add(teams[0])
-                  if (teams[1]) predR32.add(teams[1])
-                }
-                for (const id of preds.thirdPlace ?? []) predR32.add(id)
-                const correct = [...predR32].filter(id => realR32TeamIds.has(id))
-                const wrong   = [...predR32].filter(id => !realR32TeamIds.has(id))
-                const pts = correct.length * 4
+                // Show per-group: which of the user's predicted top-2 actually reached R32
+                const groups = GROUP_LETTERS.filter(g => preds.groupStandings[g]?.length >= 2 && realGroupStandings[g]?.length >= 2)
+                if (groups.length === 0) return null
+                let correctCount = 0
+                const groupRows = groups.map(g => {
+                  const predTop2 = [preds.groupStandings[g][0], preds.groupStandings[g][1]]
+                  const row = predTop2.map(id => {
+                    const inR32 = realR32TeamIds.has(id)
+                    if (inR32) correctCount++
+                    return { id, inR32 }
+                  })
+                  return { g, row }
+                })
+                // Third-place picks
+                const thirdRows = (preds.thirdPlace ?? []).map(id => ({ id, inR32: realR32TeamIds.has(id) }))
+                thirdRows.forEach(r => { if (r.inR32) correctCount++ })
+
                 return (
                   <div className="glass rounded-xl overflow-hidden">
                     <button
@@ -418,36 +425,48 @@ function UserPredictionsModal({
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-white/70">פירוט התקדמות לסבב 32</span>
                         <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full font-mono">
-                          {correct.length}/{predR32.size} נכון · +{pts} נק׳
+                          {correctCount} נכון
                         </span>
                       </div>
                       <span className="text-white/30 text-xs">{r32Open ? '▲' : '▼'}</span>
                     </button>
                     {r32Open && (
-                      <div className="px-3 pb-3 space-y-1 border-t border-white/10 pt-2">
-                        <p className="text-[10px] text-white/30 mb-1.5">נבחרות שניחשת שיגיעו לסבב 32:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {[...correct].map(id => {
-                            const t = getTeamById(id)
-                            return t ? (
-                              <div key={id} className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-1 text-[11px]">
-                                <span>{getFlagEmoji(t.flag_code)}</span>
-                                <span className="text-emerald-200 font-medium">{t.name}</span>
-                                <span className="text-emerald-400 font-bold">✓ +4</span>
-                              </div>
-                            ) : null
-                          })}
-                          {[...wrong].map(id => {
-                            const t = getTeamById(id)
-                            return t ? (
-                              <div key={id} className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2 py-1 text-[11px]">
-                                <span>{getFlagEmoji(t.flag_code)}</span>
-                                <span className="text-rose-300/70">{t.name}</span>
-                                <span className="text-rose-400/70">✗</span>
-                              </div>
-                            ) : null
-                          })}
+                      <div className="px-3 pb-3 border-t border-white/10 pt-2 space-y-2">
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {groupRows.map(({ g, row }) => (
+                            <div key={g} className="glass rounded-lg px-2 py-1.5">
+                              <p className="text-[9px] text-white/30 font-mono mb-1">בית {g}</p>
+                              {row.map(({ id, inR32 }) => {
+                                const t = getTeamById(id)
+                                return t ? (
+                                  <div key={id} className={cn('flex items-center gap-1 text-[10px]', inR32 ? 'text-emerald-200' : 'text-rose-300/60')}>
+                                    <span className="text-[9px]">{inR32 ? '✓' : '✗'}</span>
+                                    <span>{getFlagEmoji(t.flag_code)}</span>
+                                    <span className="truncate">{t.name}</span>
+                                  </div>
+                                ) : null
+                              })}
+                            </div>
+                          ))}
                         </div>
+                        {thirdRows.length > 0 && (
+                          <div>
+                            <p className="text-[9px] text-white/30 mb-1">מקום שלישי:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {thirdRows.map(({ id, inR32 }) => {
+                                const t = getTeamById(id)
+                                return t ? (
+                                  <div key={id} className={cn('flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 border',
+                                    inR32 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200' : 'bg-rose-500/10 border-rose-500/15 text-rose-300/60')}>
+                                    <span className="text-[9px]">{inR32 ? '✓' : '✗'}</span>
+                                    <span>{getFlagEmoji(t.flag_code)}</span>
+                                    <span>{t.name}</span>
+                                  </div>
+                                ) : null
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
