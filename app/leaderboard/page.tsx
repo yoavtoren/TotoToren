@@ -23,7 +23,7 @@ export default async function LeaderboardPage() {
     realGroupStandings[r.group_letter][r.position - 1] = r.team_id
   }
   const realR32TeamIds = new Set([
-    ...(r32Standings ?? []).map((r: any) => r.team_id as number),
+    ...(r32Standings ?? []).filter((r: any) => r.position <= 2).map((r: any) => r.team_id as number),
     ...(r32Third ?? []).map((r: any) => r.team_id as number),
   ])
   const byStage = (stage: string) =>
@@ -38,6 +38,10 @@ export default async function LeaderboardPage() {
       realR32TeamIds={realR32TeamIds}
       realR16TeamIds={byStage('r16')}
       realGroupStandings={realGroupStandings}
+      realQFTeamIds={byStage('qf')}
+      realSFTeamIds={byStage('sf')}
+      realFinalTeamIds={byStage('final')}
+      realChampionId={[...byStage('champion')][0] ?? null}
     />
   )
 }
