@@ -127,14 +127,16 @@ export async function POST(request: NextRequest) {
       groupMatchPts += pts
     }
 
-    // 6.2 Group standings — only scored after group stage is officially done
+    // 6.2 Group standings — score any group where the admin has entered final standings
+    // (4 teams confirmed in actualStandingsMap). No need to wait for all 12.
     let groupStandingPts = 0
-    if (groupStageComplete) {
-      for (const g of [...new Set(userGP.map((r: any) => r.group_letter as string))]) {
-        const predOrder = userGP.filter((r: any) => r.group_letter === g).sort((a: any, b: any) => a.predicted_position - b.predicted_position).map((r: any) => r.team_id as number)
-        const realOrder = realGroupStandings[g]
-        if (realOrder?.length) groupStandingPts += scoreGroupStandings(predOrder, realOrder)
-      }
+    for (const g of [...new Set(userGP.map((r: any) => r.group_letter as string))]) {
+      const realOrder = actualStandingsMap[g]?.filter(Boolean)
+      if (!realOrder || realOrder.length < 4) continue  // skip until admin enters this group
+      const predOrder = userGP.filter((r: any) => r.group_letter === g)
+        .sort((a: any, b: any) => a.predicted_position - b.predicted_position)
+        .map((r: any) => r.team_id as number)
+      groupStandingPts += scoreGroupStandings(predOrder, realOrder)
     }
 
     // 6.3 Advancement
