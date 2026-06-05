@@ -11,12 +11,17 @@ export default async function LeaderboardPage() {
     supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
     supabase.from('futures_predictions').select('user_id, champion_team_id'),
     supabase.from('matches').select('id').not('home_score', 'is', null).not('away_score', 'is', null),
-    supabase.from('group_actual_standings').select('team_id').in('position', [1, 2]),
+    supabase.from('group_actual_standings').select('group_letter, position, team_id').order('position'),
     supabase.from('r32_third_place_qualifiers').select('team_id'),
     supabase.from('knockout_stage_qualifiers').select('stage, team_id'),
   ])
 
   const completedMatchIds = new Set((completedMatches ?? []).map((m: any) => m.id as number))
+  const realGroupStandings: Record<string, number[]> = {}
+  for (const r of (r32Standings ?? []) as any[]) {
+    if (!realGroupStandings[r.group_letter]) realGroupStandings[r.group_letter] = []
+    realGroupStandings[r.group_letter][r.position - 1] = r.team_id
+  }
   const realR32TeamIds = new Set([
     ...(r32Standings ?? []).map((r: any) => r.team_id as number),
     ...(r32Third ?? []).map((r: any) => r.team_id as number),
@@ -32,6 +37,7 @@ export default async function LeaderboardPage() {
       completedMatchIds={completedMatchIds}
       realR32TeamIds={realR32TeamIds}
       realR16TeamIds={byStage('r16')}
+      realGroupStandings={realGroupStandings}
     />
   )
 }

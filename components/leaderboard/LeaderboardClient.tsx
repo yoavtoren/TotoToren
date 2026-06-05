@@ -112,6 +112,7 @@ function UserPredictionsModal({
   completedMatchIds = new Set(),
   realR32TeamIds = new Set(),
   realR16TeamIds = new Set(),
+  realGroupStandings = {},
 }: {
   profile: Profile | null
   entry: ScoreEntry | null
@@ -121,6 +122,7 @@ function UserPredictionsModal({
   completedMatchIds?: Set<number>
   realR32TeamIds?: Set<number>
   realR16TeamIds?: Set<number>
+  realGroupStandings?: Record<string, number[]>
 }) {
   const [modalTab, setModalTab] = useState<'predictions' | 'scoring'>('predictions')
   const [r32Open, setR32Open] = useState(false)
@@ -241,29 +243,41 @@ function UserPredictionsModal({
                 })}
               </div>
 
-              {/* Group Standings */}
+              {/* Group Standings with scoring */}
               <div>
                 <p className="text-[10px] text-white/40 uppercase font-mono mb-2 tracking-wider">ניחושי דירוג ליגות</p>
                 <div className="grid grid-cols-2 gap-2">
                   {GROUP_LETTERS.map(g => {
                     const order = preds.groupStandings[g]
+                    const realOrder = realGroupStandings[g]
                     const revealed = new Date(GROUP_MATCHES_BY_GROUP[g]?.[0]?.kickoff_utc ?? 0).getTime() < Date.now()
+                    const groupPts = realOrder ? order?.reduce((sum, teamId, idx) =>
+                      sum + (realOrder[idx] === teamId ? 3 : 0), 0) ?? 0 : null
                     return (
-                      <div key={g} className="glass rounded-xl px-3 py-2">
-                        <p className="text-[10px] text-white/30 font-mono mb-1">Group {g}</p>
+                      <div key={g} className={cn('glass rounded-xl px-3 py-2', groupPts != null && groupPts > 0 && 'ring-1 ring-purple-400/30')}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[10px] text-white/30 font-mono">Group {g}</p>
+                          {groupPts != null && (
+                            <span className={cn('text-[10px] font-bold', groupPts > 0 ? 'text-purple-300' : 'text-white/20')}>
+                              {groupPts > 0 ? `+${groupPts}` : '—'}
+                            </span>
+                          )}
+                        </div>
                         {!order || order.length === 0 ? (
                           <p className="text-xs text-white/20 italic">—</p>
                         ) : (
                           <div className="space-y-0.5">
                             {order.map((teamId, idx) => {
                               const team = getTeamById(teamId)
+                              const correct = realOrder ? realOrder[idx] === teamId : null
                               return (
                                 <div key={teamId} className="flex items-center gap-1.5">
                                   <span className="text-[10px] text-white/30 w-4 shrink-0">{idx + 1}.</span>
                                   {revealed && team ? (
                                     <>
                                       <span className="text-sm">{getFlagEmoji(team.flag_code)}</span>
-                                      <span className="text-xs text-white truncate">{team.name}</span>
+                                      <span className={cn('text-xs truncate flex-1', correct === true ? 'text-purple-200' : correct === false ? 'text-white/40' : 'text-white')}>{team.name}</span>
+                                      {correct === true && <span className="text-[9px] text-purple-400 shrink-0">✓</span>}
                                     </>
                                   ) : (
                                     <span className="text-xs text-white/20">🔒</span>
@@ -278,6 +292,45 @@ function UserPredictionsModal({
                   })}
                 </div>
               </div>
+
+              {/* Knockout predictions sorted newest first */}
+              {preds.knockout.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-white/40 uppercase font-mono mb-2 tracking-wider">ניחושי נוקאאוט</p>
+                  <div className="space-y-1">
+                    {[...preds.knockout]
+                      .sort((a, b) => b.match_num - a.match_num)
+                      .map(k => {
+                        const team = getTeamById(k.predicted_winner_id)
+                        const inR16 = realR16TeamIds.size > 0 ? realR16TeamIds.has(k.predicted_winner_id) : null
+                        const R32_IDS_LOCAL = new Set([73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88])
+                        const isR32Match = R32_IDS_LOCAL.has(k.match_num)
+                        const correct = isR32Match ? inR16 : null
+                        return (
+                          <div key={k.match_num} className={cn(
+                            'flex items-center gap-2 text-xs px-3 py-2 rounded-xl glass',
+                            correct === true && 'ring-1 ring-emerald-400/30'
+                          )}>
+                            <span className="text-white/25 font-mono w-8 shrink-0">M{k.match_num}</span>
+                            {team ? (
+                              <>
+                                <span className="text-sm">{getFlagEmoji(team.flag_code)}</span>
+                                <span className={cn('flex-1 truncate', correct === true ? 'text-emerald-200' : correct === false ? 'text-white/40' : 'text-white/80')}>
+                                  {team.name} מנצחת
+                                </span>
+                              </>
+                            ) : <span className="flex-1 text-white/20">—</span>}
+                            {(k.predicted_home_score != null && k.predicted_away_score != null) && (
+                              <span className="font-mono text-white/50 shrink-0" dir="ltr">{k.predicted_home_score}:{k.predicted_away_score}</span>
+                            )}
+                            {correct === true && <span className="text-emerald-400 text-[10px] font-bold shrink-0">✓ +5</span>}
+                            {correct === false && <span className="text-rose-400/60 text-[10px] shrink-0">✗</span>}
+                          </div>
+                        )
+                      })}
+                  </div>
+                </div>
+              )}
 
               {/* Futures */}
               {preds.futures && (
@@ -1058,6 +1111,7 @@ export default function LeaderboardClient({
   completedMatchIds = new Set(),
   realR32TeamIds = new Set(),
   realR16TeamIds = new Set(),
+  realGroupStandings = {},
 }: {
   initialScores: ScoreEntry[]
   allProfiles: Profile[]
@@ -1065,6 +1119,7 @@ export default function LeaderboardClient({
   completedMatchIds?: Set<number>
   realR32TeamIds?: Set<number>
   realR16TeamIds?: Set<number>
+  realGroupStandings?: Record<string, number[]>
 }) {
   const [scores, setScores] = useState(initialScores)
   const [profiles, setProfiles] = useState(allProfiles)
@@ -1256,6 +1311,7 @@ export default function LeaderboardClient({
         completedMatchIds={completedMatchIds}
         realR32TeamIds={realR32TeamIds}
         realR16TeamIds={realR16TeamIds}
+        realGroupStandings={realGroupStandings}
       />
     )}
   </>
