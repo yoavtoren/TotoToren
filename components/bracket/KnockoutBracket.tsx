@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { resolveMatchTeam } from '@/lib/bracket'
 import { getFlagEmoji, getTeamById } from '@/data/teams'
 import { KNOCKOUT_MATCHES } from '@/data/match-schedule'
@@ -390,35 +391,38 @@ export default function KnockoutBracket({
               </g>
             </svg>
 
+            {/* Champion — shown above the Final card */}
+            {champion && (
+              <div
+                className="absolute rounded-2xl text-center overflow-hidden"
+                style={{
+                  top: sfTopY - 155,
+                  left: -16, right: -16,
+                  background: 'linear-gradient(160deg, rgba(234,179,8,0.22), rgba(234,179,8,0.07))',
+                  border: '2px solid rgba(234,179,8,0.55)',
+                  boxShadow: '0 0 32px rgba(234,179,8,0.25)',
+                }}
+              >
+                <div className="px-2 py-2 flex flex-col items-center gap-1">
+                  <Image src="/trophy.png" alt="trophy" width={80} height={80} className="w-20 h-20 object-contain" />
+                  <p className="text-[9px] text-yellow-400/70 font-bold uppercase tracking-widest">🏆 אלוף</p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-2xl">{getFlagEmoji(champion.flag_code)}</span>
+                    <p className="text-base font-extrabold text-yellow-200 leading-tight">{champion.name}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Final */}
             <div className="absolute" style={{ top: sfTopY, left: 8, right: 8 }}>
               <div className="rounded-2xl overflow-hidden ring-2 ring-yellow-400/60 shadow-lg shadow-yellow-500/20">
                 <div className="bg-yellow-400/15 border-b border-yellow-400/30 py-1.5 text-center">
-                  <p className="text-2xl leading-none">🏆</p>
-                  <p className="text-[10px] text-yellow-300 font-bold tracking-widest uppercase mt-0.5">גמר</p>
+                  <p className="text-[10px] text-yellow-300 font-bold tracking-widest uppercase">גמר</p>
                 </div>
                 {card(104, true)}
               </div>
             </div>
-
-            {/* Champion */}
-            {champion && (
-              <div
-                className="absolute rounded-2xl text-center overflow-hidden"
-                style={{ top: sfTopY + CH + 40, left: 4, right: 4,
-                  background: 'linear-gradient(135deg, rgba(234,179,8,0.18), rgba(234,179,8,0.06))',
-                  border: '1.5px solid rgba(234,179,8,0.45)',
-                  boxShadow: '0 0 24px rgba(234,179,8,0.2)',
-                }}
-              >
-                <div className="px-3 py-3 space-y-1">
-                  <p className="text-3xl leading-none">🏆</p>
-                  <p className="text-[9px] text-yellow-400/60 font-bold uppercase tracking-widest">אלוף</p>
-                  <p className="text-2xl leading-none mt-1">{getFlagEmoji(champion.flag_code)}</p>
-                  <p className="text-sm font-extrabold text-yellow-200 leading-tight">{champion.name}</p>
-                </div>
-              </div>
-            )}
 
             {/* 3rd-place */}
             <div className="absolute" style={{ top: sfTopY + CH * 2 + 80, left: 8, right: 8 }}>
